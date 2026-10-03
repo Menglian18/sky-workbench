@@ -250,15 +250,6 @@ private fun CodexDetailDialog(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = if (entry.name.isNotBlank() && entry.name != entry.displayName) {
-                        "英文名：${entry.name}"
-                    } else {
-                        ""
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
                     text = "要花：" + buildString {
                         if (entry.candles + entry.hearts + entry.ascended == 0) {
                             append("不花白蜡（季节或活动货币）")

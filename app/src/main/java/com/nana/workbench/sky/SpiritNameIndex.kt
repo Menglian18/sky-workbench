@@ -53,10 +53,19 @@ object SpiritNameIndex {
         if (key.isEmpty()) return null
         index[key]?.let { return it }
         if (key.length < 3) return null
-        return index.entries
-            .firstOrNull { (name, _) ->
-                name.length >= 3 && (name.contains(key) || key.contains(name))
-            }
-            ?.value
+        // 1.2.2 第 1 条：必须是这位先祖本人的树，宁可不配也不乱配。
+        // 在"互相包含"的候选里，优先前缀吻合的，其次名字最长的（最贴近）。
+        val candidates = index.entries.filter { (name, _) ->
+            name.length >= 3 && (name.contains(key) || key.contains(name))
+        }
+        if (candidates.isEmpty()) return null
+        return candidates
+            .sortedWith(
+                compareByDescending<Map.Entry<String, String>> {
+                    it.key.startsWith(key) || key.startsWith(it.key)
+                }.thenByDescending { it.key.length },
+            )
+            .first()
+            .value
     }
 }

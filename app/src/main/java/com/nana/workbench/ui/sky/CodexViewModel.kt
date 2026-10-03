@@ -92,6 +92,22 @@ class CodexViewModel(application: Application) : AndroidViewModel(application) {
         .mapNotNull { guid -> data.value.spiritNames[guid]?.let { guid to it } }
         .sortedBy { it.second }
 
+    /** 复刻卡片上用的先祖照片：先按名字对上先祖，再取照片网址（1.2.2 第 3 条） */
+    fun imageForName(spiritName: String): String {
+        val guid = SpiritNameIndex.find(spiritName, data.value.spiritIdByName) ?: return ""
+        return data.value.spiritImages[guid].orEmpty()
+    }
+
+    /**
+     * 名字 →（匹配到的先祖名, 树）。界面用它显示"这是谁的树"，
+     * 免得配到别人身上还看不出来（1.2.2 第 1 条）。
+     */
+    fun matchForName(spiritName: String): Pair<String, SpiritTree>? {
+        val guid = SpiritNameIndex.find(spiritName, data.value.spiritIdByName) ?: return null
+        val tree = data.value.trees[guid] ?: return null
+        return (data.value.spiritNames[guid] ?: spiritName) to tree
+    }
+
     /** 先祖显示名：知道 guid 就用打包好的名字，不知道就原样返回传进来的 */
     fun spiritDisplayName(spiritId: String, fallback: String): String =
         data.value.spiritNames[spiritId] ?: fallback

@@ -38,6 +38,8 @@ import com.nana.workbench.ui.common.RemoteImage
 fun SpiritTreeDialog(
     spiritName: String,
     tree: SpiritTree?,
+    /** 匹配到的先祖名；用来在顶部写明"这是谁的树"（1.2.2 第 1 条） */
+    matchedName: String? = null,
     treeCount: Int = 0,
     candidates: List<Pair<String, String>> = emptyList(),
     onPick: (String) -> Unit = {},
@@ -60,6 +62,13 @@ fun SpiritTreeDialog(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
+                if (matchedName != null && matchedName != spiritName) {
+                    Text(
+                        text = "这是「$matchedName」的兑换树",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
 
                 if (tree == null || tree.nodes.isEmpty()) {
                     Text(

@@ -74,6 +74,7 @@ import com.nana.workbench.today.moveItem
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import com.nana.workbench.ui.common.RemoteImage
 
 @Composable
 fun SkyScreen(
@@ -221,6 +222,14 @@ private fun TravelingSection(
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                        // 1.2.2 第 3 条：复刻先祖旁边放一张这位先祖的照片（联网取，不打包）
+                        codex.imageForName(ongoing.spiritName).takeIf { it.isNotBlank() }?.let { photo ->
+                            RemoteImage(
+                                url = photo,
+                                contentDescription = ongoing.spiritName,
+                                imageSize = 88.dp,
+                            )
+                        }
                         TextButton(onClick = { treeSpiritName = ongoing.spiritName }) {
                             Text("看兑换树 →")
                         }
@@ -305,9 +314,11 @@ private fun TravelingSection(
         }
 
         treeSpiritName?.let { name ->
+            val matched = codex.matchForName(name)
             SpiritTreeDialog(
                 spiritName = name,
-                tree = codex.treeForName(name),
+                tree = matched?.second,
+                matchedName = matched?.first,
                 treeCount = treeCount,
                 candidates = codex.spiritsWithTrees(),
                 onPick = { picked -> treeSpiritName = picked },

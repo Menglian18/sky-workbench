@@ -22,21 +22,12 @@ data class CodexEntry(
     val spiritId: String = "",
 ) {
     /**
-     * 界面上显示的名字（1.2.1 改进 · 第 1 条：名字一度全没了，这里保证一定有名字）。
+     * 界面上显示的名字（1.2.2 改进 · 第 2 条：只要中文、不要英文）。
      *
-     * 拼成"中文部位名 · 英文名"，例如「斗篷 · Cape」：
-     * 中文在前看得懂，英文在后用来区分是哪一件。
+     * 名字在生成数据时就已经翻成中文（tools/translate_items.py），这里只管取用；
+     * 万一哪条没有中文名，也**不会退回英文**，而是显示"未知物品"。
      */
-    val displayName: String get() {
-        val zh = nameZh.ifBlank { partZh }.trim()
-        val en = name.trim()
-        return when {
-            zh.isNotEmpty() && en.isNotEmpty() && zh != en -> "$zh · $en"
-            zh.isNotEmpty() -> zh
-            en.isNotEmpty() -> en
-            else -> "未知物品"
-        }
-    }
+    val displayName: String get() = nameZh.ifBlank { partZh }.trim().ifEmpty { "未知物品" }
 
     val category: CodexCategory get() = CodexCategory.fromType(type)
 }
@@ -49,6 +40,8 @@ data class CodexData(
     val spiritNames: Map<String, String> = emptyMap(),
     /** 名字（归一化后）→ 先祖 guid：把"正在复刻"的条目对上先祖要用 */
     val spiritIdByName: Map<String, String> = emptyMap(),
+    /** 先祖 guid → 照片网址（1.2.2 第 3 条：复刻卡片上放先祖的照片）。只存网址，图片联网现取 */
+    val spiritImages: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -71,7 +64,30 @@ class CodexAssets(private val context: Context) {
         val index = SpiritNameIndex.buildNames(
             parsed.mapValues { (_, pair) -> listOf(pair.first, pair.second) },
         )
-        CodexData(entries = entries, trees = trees, spiritNames = spiritNames, spiritIdByName = index)
+        val images = runCatching { parseSpiritImages(read("codex/spirits.json")) }
+            .getOrDefault(emptyMap())
+        CodexData(
+            entries = entries,
+            trees = trees,
+            spiritNames = spiritNames,
+            spiritIdByName = index,
+            spiritImages = images,
+        )
+    }
+
+    /** 先祖：guid → 照片网址（1.2.2 第 3 条） */
+    private fun parseSpiritImages(text: String): Map<String, String> {
+        val array = runCatching { JSONArray(text) }.getOrNull()
+            ?: runCatching { JSONObject(text).optJSONArray("items") }.getOrNull()
+            ?: return emptyMap()
+        val result = mutableMapOf<String, String>()
+        for (index in 0 until array.length()) {
+            val obj = array.optJSONObject(index) ?: continue
+            val guid = obj.optString("guid")
+            val url = obj.optString("imageUrl")
+            if (guid.isNotEmpty() && url.isNotEmpty()) result[guid] = url
+        }
+        return result
     }
 
     /** 先祖：guid →（中文名, 英文名） */
