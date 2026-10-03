@@ -155,7 +155,9 @@ fun TodayScreen(
                 var draggingId by remember { mutableStateOf<Long?>(null) }
                 var dragOffset by remember { mutableFloatStateOf(0f) }
                 var rowHeight by remember { mutableFloatStateOf(0f) }
-                val displayItems = TodoOrdering.sortForDisplay(openItems + doneItems)
+                val openSorted = TodoOrdering.sortForDisplay(openItems)
+                // 划掉的在最下层，且不参与拖拽（1.1 改进第 4 条：沉到最下层、锁定不动）
+                val displayItems = openSorted + doneItems
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -163,6 +165,7 @@ fun TodayScreen(
                     userScrollEnabled = draggingId == null,
                 ) {
                     itemsIndexed(displayItems, key = { _, item -> item.id }) { index, item ->
+                        val draggable = !item.done
                         TodoRow(
                             item = item,
                             onToggle = { viewModel.toggle(item) },
@@ -172,31 +175,37 @@ fun TodayScreen(
                             isDragging = draggingId == item.id,
                             dragOffsetY = if (draggingId == item.id) dragOffset else 0f,
                             onMeasuredHeight = { height -> if (height > 0f) rowHeight = height },
-                            dragHandle = Modifier.pointerInput(item.id) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = {
-                                        draggingId = item.id
-                                        dragOffset = 0f
-                                    },
-                                    onDrag = { change, amount ->
-                                        change.consume()
-                                        dragOffset += amount.y
-                                    },
-                                    onDragEnd = {
-                                        val step = if (rowHeight > 0f) rowHeight else 1f
-                                        val target = (index + (dragOffset / step).roundToInt())
-                                            .coerceIn(0, displayItems.lastIndex)
-                                        if (target != index) {
-                                            viewModel.reorder(displayItems, index, target)
-                                        }
-                                        draggingId = null
-                                        dragOffset = 0f
-                                    },
-                                    onDragCancel = {
-                                        draggingId = null
-                                        dragOffset = 0f
-                                    },
-                                )
+                            draggable = draggable,
+                            // openSorted 排在前面，所以这里的 index 就是它在未完成列表里的下标
+                            dragHandle = if (!draggable) {
+                                Modifier
+                            } else {
+                                Modifier.pointerInput(item.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            draggingId = item.id
+                                            dragOffset = 0f
+                                        },
+                                        onDrag = { change, amount ->
+                                            change.consume()
+                                            dragOffset += amount.y
+                                        },
+                                        onDragEnd = {
+                                            val step = if (rowHeight > 0f) rowHeight else 1f
+                                            val target = (index + (dragOffset / step).roundToInt())
+                                                .coerceIn(0, openSorted.lastIndex)
+                                            if (target != index) {
+                                                viewModel.reorder(openSorted, index, target)
+                                            }
+                                            draggingId = null
+                                            dragOffset = 0f
+                                        },
+                                        onDragCancel = {
+                                            draggingId = null
+                                            dragOffset = 0f
+                                        },
+                                    )
+                                }
                             },
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.surface)
@@ -286,6 +295,7 @@ private fun TodoRow(
     isDragging: Boolean = false,
     dragOffsetY: Float = 0f,
     onMeasuredHeight: (Float) -> Unit = {},
+    draggable: Boolean = true,
     dragHandle: Modifier = Modifier,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
@@ -336,12 +346,13 @@ private fun TodoRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // 左边：按住这里可以把任务拖到别的位置（1.1 改进第 3 条）
+                // 划掉的会变成一把小锁，拖不动（1.1 改进第 4 条：锁定不动）
                 Box(
                     modifier = dragHandle.size(40.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "≡",
+                        text = if (draggable) "≡" else "🔒",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

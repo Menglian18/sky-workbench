@@ -6,7 +6,8 @@ import com.nana.workbench.data.db.TodoEntity
  * 今日计划列表的显示顺序。
  *
  * 规则（写死在这里，避免界面上各写一套）：
- *  1. 按四象限分组：重要又紧急 → 重要不紧急 → 紧急不重要 → 都不
+ *  0. **已划掉的沉到最下面**（1.1 改进第 4 条：划掉后放到所有任务最下层、锁定不动）
+ *  1. 没完成的按四象限分组：重要又紧急 → 重要不紧急 → 紧急不重要 → 都不
  *  2. **同一格内按手工顺序**（拖拽调过就以拖的为准）
  *  3. 再按"有具体时间点的在前、时间早的在前"
  *  4. 最后按创建先后
@@ -18,10 +19,14 @@ object TodoOrdering {
 
     fun sortForDisplay(items: List<TodoEntity>): List<TodoEntity> =
         items.sortedWith(
-            compareByDescending<TodoEntity> { it.priority }
+            compareBy<TodoEntity> { it.done }
+                .thenByDescending { it.priority }
                 .thenBy { it.sortOrder }
                 .thenBy { it.timePoint == null }
                 .thenBy { it.timePoint ?: "" }
                 .thenBy { it.id },
         )
+
+    /** 只有没划掉的能拖 */
+    fun draggable(items: List<TodoEntity>): List<TodoEntity> = items.filter { !it.done }
 }

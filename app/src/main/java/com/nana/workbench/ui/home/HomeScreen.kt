@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nana.workbench.data.db.TodoEntity
 import com.nana.workbench.sky.SkyCountdown
+import com.nana.workbench.today.Quadrant
 import com.nana.workbench.ui.nav.TabDestination
 import com.nana.workbench.util.DateKeys
 import kotlinx.coroutines.launch
@@ -52,6 +53,7 @@ fun HomeScreen(
     val dateKey by viewModel.dateKey.collectAsState()
     val openCount by viewModel.openCount.collectAsState()
     val topTodos by viewModel.topTodos.collectAsState()
+    val quadrants by viewModel.quadrants.collectAsState()
     val studyDue by viewModel.studyDueCount.collectAsState()
     val studyDone by viewModel.studyDoneToday.collectAsState()
     val pinned by viewModel.pinnedMemos.collectAsState()
@@ -148,6 +150,34 @@ fun HomeScreen(
             }
 
             // ── 今日复习 ──────────────────────────────────────────────
+            // 1.1 改进第 3 条：首页要有"紧急 / 重要四象限"
+            SummaryCard("紧急 / 重要四象限", onClick = { onOpenTab(TabDestination.TODAY) }) {
+                Quadrant.ordered.forEach { quadrant ->
+                    val items = quadrants[quadrant].orEmpty()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = quadrant.shortTitle,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = if (items.isEmpty()) "—" else "${items.size} 件",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                    if (items.isNotEmpty()) {
+                        Text(
+                            text = items.take(3).joinToString("、") { it.title } +
+                                if (items.size > 3) "…" else "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
             SummaryCard("今日复习", onClick = { onOpenTab(TabDestination.STUDY) }) {
                 if (studyDue == 0 && studyDone == 0) {
                     Text(

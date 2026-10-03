@@ -15,12 +15,13 @@ class TodoOrderingTest {
         priority: Int = 0,
         timePoint: String? = null,
         sortOrder: Int = 0,
+        done: Boolean = false,
     ) = TodoEntity(
         id = id,
         title = title,
         priority = priority,
         timePoint = timePoint,
-        done = false,
+        done = done,
         originalDate = "2026-10-09",
         dueDate = "2026-10-09",
         sortOrder = sortOrder,
@@ -89,5 +90,50 @@ class TodoOrderingTest {
     @Test
     fun `空清单不报错`() {
         assertEquals(0, TodoOrdering.sortForDisplay(emptyList()).size)
+    }
+
+    @Test
+    fun `划掉的沉到所有任务最下面`() {
+        val sorted = TodoOrdering.sortForDisplay(
+            listOf(
+                todo(1, "划掉的普通", priority = 0, done = true),
+                todo(2, "没做的普通"),
+                todo(3, "划掉的紧急", priority = 3, done = true),
+                todo(4, "没做的重要", priority = 2),
+            ),
+        )
+        assertEquals(
+            listOf("没做的重要", "没做的普通", "划掉的紧急", "划掉的普通"),
+            sorted.map { it.title },
+        )
+    }
+
+    @Test
+    fun `划掉的不会插在没完成的任务中间`() {
+        val sorted = TodoOrdering.sortForDisplay(
+            listOf(
+                todo(1, "完成的", done = true),
+                todo(2, "甲"),
+                todo(3, "乙"),
+                todo(4, "丙"),
+            ),
+        )
+        assertEquals(listOf("甲", "乙", "丙", "完成的"), sorted.map { it.title })
+    }
+
+    @Test
+    fun `划掉的不参与拖拽`() {
+        val items = listOf(
+            todo(1, "甲"),
+            todo(2, "完成的", done = true),
+            todo(3, "乙"),
+        )
+        assertEquals(listOf("甲", "乙"), TodoOrdering.draggable(items).map { it.title })
+    }
+
+    @Test
+    fun `全部完成时拖拽列表是空的`() {
+        val items = listOf(todo(1, "甲", done = true), todo(2, "乙", done = true))
+        assertEquals(0, TodoOrdering.draggable(items).size)
     }
 }
