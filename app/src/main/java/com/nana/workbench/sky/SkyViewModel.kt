@@ -38,6 +38,44 @@ class SkyViewModel(application: Application) : AndroidViewModel(application) {
     private val codex = CodexRepository(application)
     private val client = SkyFetchClient()
 
+    /**
+     * 保存一个光遇账号（1.1 改进 · C5：带密码）。
+     * [existing] 为空表示新增，否则是修改。
+     */
+    fun saveAccount(
+        existing: SkyAccountEntity?,
+        nickname: String,
+        loginMethod: String,
+        server: String,
+        note: String,
+        password: String,
+    ) {
+        val name = nickname.trim()
+        if (name.isEmpty()) return
+        viewModelScope.launch {
+            val base = existing ?: SkyAccountEntity(nickname = name)
+            val entity = base.copy(
+                nickname = name,
+                loginMethod = loginMethod.trim(),
+                server = server.trim().ifEmpty { "国服" },
+                note = note.trim(),
+                password = password,
+            )
+            if (existing == null) dao.insertAccount(entity) else dao.updateAccount(entity)
+        }
+    }
+
+    /** 拖动排序（1.1 改进 · C5）：按传进来的新顺序把 sortOrder 重排一遍 */
+    fun reorderAccounts(ordered: List<SkyAccountEntity>) {
+        viewModelScope.launch {
+            ordered.forEachIndexed { index, account ->
+                if (account.sortOrder != index + 1) {
+                    dao.updateAccount(account.copy(sortOrder = index + 1))
+                }
+            }
+        }
+    }
+
     private val _todayKey = MutableStateFlow(DateKeys.todayKey())
     val todayKey: StateFlow<String> = _todayKey.asStateFlow()
 

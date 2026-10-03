@@ -258,6 +258,7 @@ object BackupCodec {
     private fun accountToJson(item: SkyAccountEntity) = JSONObject().apply {
         put("id", item.id); put("nickname", item.nickname); put("loginMethod", item.loginMethod)
         put("server", item.server); put("binding", item.binding); put("note", item.note)
+        put("password", item.password)
         put("sortOrder", item.sortOrder)
     }
 
@@ -268,6 +269,7 @@ object BackupCodec {
         server = obj.optString("server"),
         binding = obj.optString("binding"),
         note = obj.optString("note"),
+        password = obj.optString("password"),
         sortOrder = obj.optInt("sortOrder"),
     )
 

@@ -139,6 +139,14 @@ data class SkyAccountEntity(
     val server: String = "国服",
     val binding: String = "",
     val note: String = "",
+    /**
+     * 账号密码（1.1 改进 · C5）。
+     *
+     * ⚠️ 提醒：它是**明文**存在手机本地数据库里的，没有加密。
+     * 界面上必须把这句话给用户看（见 AccountSection）。
+     */
+    @ColumnInfo(defaultValue = "''")
+    val password: String = "",
     val sortOrder: Int = 0,
 )
 

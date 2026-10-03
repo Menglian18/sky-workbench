@@ -22,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SkySeasonEntity::class,
         AppStateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class NanaDatabase : RoomDatabase() {
@@ -69,6 +69,16 @@ abstract class NanaDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 3 → 4：光遇账号加上"密码"字段（1.1 改进 · C5）。
+         * 只加列，老数据一条不丢。
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sky_account ADD COLUMN password TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var instance: NanaDatabase? = null
 
@@ -78,7 +88,7 @@ abstract class NanaDatabase : RoomDatabase() {
                     context.applicationContext,
                     NanaDatabase::class.java,
                     DB_NAME,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
             }
     }
 }

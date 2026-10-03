@@ -40,8 +40,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.nana.workbench.tools.RestTimerService
-import com.nana.workbench.tools.TimerFormat
 import com.nana.workbench.tools.ToolsViewModel
 import com.nana.workbench.tools.WheelSet
 
@@ -181,49 +179,7 @@ fun ToolsSection(viewModel: ToolsViewModel = viewModel()) {
             }
         }
 
-        // ── 休息铃声 ──────────────────────────────────────────────────────────
-        val running by RestTimerService.running.collectAsState()
-        val remaining by RestTimerService.remainingSeconds.collectAsState()
-        var minutes by remember { mutableStateOf("10") }
-
-        ToolCard(
-            title = "休息铃声",
-            hint = "到点会响铃并震动。锁屏也能响（走系统的前台服务）。",
-        ) {
-            if (running) {
-                CountdownRing(remaining = remaining)
-                Text(
-                    text = "还剩 ${TimerFormat.remaining(remaining)}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Button(onClick = { RestTimerService.stop(context) }) { Text("停止") }
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(5, 10, 15).forEach { preset ->
-                        FilterChip(
-                            selected = minutes == preset.toString(),
-                            onClick = { minutes = preset.toString() },
-                            label = { Text("$preset 分钟") },
-                        )
-                    }
-                }
-                OutlinedTextField(
-                    value = minutes,
-                    onValueChange = { minutes = it },
-                    label = { Text("分钟（也可以自己填）") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Button(
-                    onClick = {
-                        val value = minutes.toLongOrNull() ?: 10L
-                        RestTimerService.start(context, value * 60L, "休息")
-                    },
-                ) { Text("开始休息") }
-            }
-        }
+        // 1.1 改进 · C 模块：休息铃声整块去掉了（连服务与相关权限一起清）
     }
 
     editingIndex?.let { index ->
@@ -301,32 +257,6 @@ private fun ToolCard(
             )
             content()
         }
-    }
-}
-
-@Composable
-private fun CountdownRing(remaining: Long) {
-    val color = MaterialTheme.colorScheme.primary
-    val track = MaterialTheme.colorScheme.surfaceVariant
-    val fraction = if (remaining <= 0) 0f else ((remaining % 60).toFloat() / 60f).coerceIn(0f, 1f)
-    Canvas(modifier = Modifier.size(96.dp)) {
-        val stroke = 8.dp.toPx()
-        drawArc(
-            color = track,
-            startAngle = -90f,
-            sweepAngle = 360f,
-            useCenter = false,
-            style = Stroke(width = stroke, cap = StrokeCap.Round),
-            size = Size(size.width, size.height),
-        )
-        drawArc(
-            color = color,
-            startAngle = -90f,
-            sweepAngle = 360f * fraction,
-            useCenter = false,
-            style = Stroke(width = stroke, cap = StrokeCap.Round),
-            size = Size(size.width, size.height),
-        )
     }
 }
 

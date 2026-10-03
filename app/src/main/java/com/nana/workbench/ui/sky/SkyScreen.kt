@@ -61,6 +61,19 @@ import com.nana.workbench.ui.tools.ToolsSection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.zIndex
+import com.nana.workbench.today.moveItem
+import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 
 @Composable
 fun SkyScreen(
@@ -72,15 +85,13 @@ fun SkyScreen(
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("复刻季节") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("图鉴") })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("心愿单") })
-            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("账号") })
-            Tab(selected = tab == 4, onClick = { tab = 4 }, text = { Text("小工具") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("账号") })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("小工具") })
         }
         when (tab) {
             0 -> TravelingSection(viewModel)
-            1 -> CodexSection(viewModel)
-            2 -> WishSection(viewModel)
-            3 -> AccountSection(viewModel)
+            1 -> CodexGridScreen()
+            2 -> AccountSection(viewModel)
             else -> ToolsSection()
         }
     }
@@ -111,7 +122,11 @@ private fun costText(candles: Int, hearts: Int, ascended: Int): String {
 }
 
 @Composable
-private fun TravelingSection(viewModel: SkyViewModel) {
+private fun TravelingSection(
+    viewModel: SkyViewModel,
+    codex: CodexViewModel = viewModel(),
+) {
+    var treeSpiritName by remember { mutableStateOf<String?>(null) }
     val spirits by viewModel.travelingSpirits.collectAsState()
     val countdown by viewModel.countdown.collectAsState()
     val season by viewModel.currentSeason.collectAsState()
@@ -205,6 +220,9 @@ private fun TravelingSection(viewModel: SkyViewModel) {
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                        TextButton(onClick = { treeSpiritName = ongoing.spiritName }) {
+                            Text("看兑换树 →")
+                        }
                         Text(
                             text = "${ongoing.startDate} ～ ${ongoing.endDate} · ${ongoing.type}",
                             style = MaterialTheme.typography.bodySmall,
@@ -243,6 +261,9 @@ private fun TravelingSection(viewModel: SkyViewModel) {
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                        TextButton(onClick = { treeSpiritName = next.spiritName }) {
+                            Text("看兑换树 →")
+                        }
                     }
                     else -> Text(
                         text = "还没有复刻数据。点右上角的刷新去拿一次；拿不到也不影响你自己记的东西。",
@@ -282,41 +303,15 @@ private fun TravelingSection(viewModel: SkyViewModel) {
             }
         }
 
-        if (spirits.isNotEmpty()) {
-            Text(
-                text = "历史复刻（${spirits.size} 条）",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onBackground,
+        treeSpiritName?.let { name ->
+            SpiritTreeDialog(
+                spiritName = name,
+                tree = codex.treeForName(name),
+                onDismiss = { treeSpiritName = null },
             )
-            spirits.take(40).forEach { item ->
-                HistoryRow(item)
-            }
         }
-    }
-}
 
-@Composable
-private fun HistoryRow(item: SkyTravelingSpiritEntity) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = item.spiritName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = item.type,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Text(
-            text = "${item.startDate} ～ ${item.endDate}" + if (item.items.isNotBlank()) " · ${item.items}" else "",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.surface)
+        // 1.1 改进 · C 模块：历史复刻列表不要了（只留"正在复刻 / 下次复刻"）
     }
 }
 
@@ -423,166 +418,18 @@ private fun CodexRow(item: CodexItem, onAdd: () -> Unit, onSpirit: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        TextButton(onClick = onAdd) { Text("加心愿") }
     }
 }
 
-@Composable
-private fun WishSection(viewModel: SkyViewModel) {
-    val wishes by viewModel.wishes.collectAsState()
-    val holding by viewModel.holding.collectAsState()
-    val plan by viewModel.wishPlan.collectAsState()
-
-    var candles by remember { mutableStateOf(holding.candles.toString()) }
-    var hearts by remember { mutableStateOf(holding.hearts.toString()) }
-    var ascended by remember { mutableStateOf(holding.ascended.toString()) }
-
-    LaunchedEffect(holding) {
-        candles = holding.candles.toString()
-        hearts = holding.hearts.toString()
-        ascended = holding.ascended.toString()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            text = "我现在有多少（填一次就能算还差多少，不用每天记）",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = candles,
-                onValueChange = { candles = it },
-                label = { Text("白蜡") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedTextField(
-                value = hearts,
-                onValueChange = { hearts = it },
-                label = { Text("爱心") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
-            OutlinedTextField(
-                value = ascended,
-                onValueChange = { ascended = it },
-                label = { Text("升华") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Button(
-            onClick = {
-                viewModel.saveHolding(
-                    candles.toIntOrNull() ?: 0,
-                    hearts.toIntOrNull() ?: 0,
-                    ascended.toIntOrNull() ?: 0,
-                )
-            },
-        ) { Text("保存我的数量") }
-
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("算账", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                Text(
-                    text = "想要的白蜡共 ${plan.needCandles} · 爱心 ${plan.needHearts}" +
-                        if (plan.needAscended > 0) " · 升华 ${plan.needAscended}" else "",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                if (plan.ownedCandles > 0) {
-                    Text(
-                        text = "其中你已经拥有的部分值 ${plan.ownedCandles} 根白蜡，已经扣掉了",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = "按你现在的数量，还差 白蜡 ${plan.shortCandles} · 爱心 ${plan.shortHearts}" +
-                        if (plan.needAscended > 0) " · 升华 ${plan.shortAscended}" else "",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-
-        if (wishes.isEmpty()) {
-            EmptyState(
-                message = "想要什么外观，去「图鉴」里点「加心愿」就会出现在这里。",
-            )
-        } else {
-            wishes.forEach { wish ->
-                WishRow(
-                    wish = wish,
-                    onOwned = { viewModel.toggleOwned(wish) },
-                    onObtained = { viewModel.toggleObtained(wish) },
-                    onDelete = { viewModel.deleteWish(wish) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WishRow(
-    wish: SkyWishEntity,
-    onOwned: () -> Unit,
-    onObtained: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = wish.itemName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = buildString {
-                    if (wish.spiritName.isNotBlank()) append(wish.spiritName).append(" · ")
-                    append(costText(wish.costCandle, wish.costHeart, wish.costAscended))
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        FilterChip(
-            selected = wish.owned,
-            onClick = onOwned,
-            label = { Text("已拥有") },
-        )
-        FilterChip(
-            selected = wish.obtained,
-            onClick = onObtained,
-            label = { Text("已换到") },
-        )
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = "删除")
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountSection(viewModel: SkyViewModel) {
     val accounts by viewModel.accounts.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<SkyAccountEntity?>(null) }
+    var revealed by remember { mutableStateOf<Long?>(null) }
+    var draggingId by remember { mutableStateOf<Long?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var rowHeight by remember { mutableFloatStateOf(0f) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -602,23 +449,76 @@ private fun AccountSection(viewModel: SkyViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "你有几个号？加进来就不会记混了。这里不存密码，只记「用哪个渠道登录」。",
+                text = "按住左边的 \u2261 能调顺序；点一行可以改。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "\u26a0\ufe0f 密码是明文存在这台手机里的，没有加密。手机被别人拿到就能看到，想清楚再记。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
             )
             if (accounts.isEmpty()) {
                 EmptyState(message = "还没有加号。点右下角 + 加一个。", actionLabel = "加一个号") { showAdd = true }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(accounts, key = { it.id }) { account ->
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = draggingId == null,
+                ) {
+                    itemsIndexed(accounts, key = { _, account -> account.id }) { index, account ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { editing = account }
-                                .padding(vertical = 10.dp),
+                                .zIndex(if (draggingId == account.id) 1f else 0f)
+                                .graphicsLayer {
+                                    translationY = if (draggingId == account.id) dragOffset else 0f
+                                }
+                                .onSizeChanged { if (it.height > 0) rowHeight = it.height.toFloat() }
+                                .padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .pointerInput(account.id) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                draggingId = account.id
+                                                dragOffset = 0f
+                                            },
+                                            onDrag = { change, amount ->
+                                                change.consume()
+                                                dragOffset += amount.y
+                                            },
+                                            onDragEnd = {
+                                                val step = if (rowHeight > 0f) rowHeight else 1f
+                                                val target = (index + (dragOffset / step).roundToInt())
+                                                    .coerceIn(0, accounts.lastIndex)
+                                                if (target != index) {
+                                                    viewModel.reorderAccounts(accounts.moveItem(index, target))
+                                                }
+                                                draggingId = null
+                                                dragOffset = 0f
+                                            },
+                                            onDragCancel = {
+                                                draggingId = null
+                                                dragOffset = 0f
+                                            },
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "\u2261",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { editing = account },
+                            ) {
                                 Text(
                                     text = account.nickname,
                                     style = MaterialTheme.typography.bodyLarge,
@@ -629,10 +529,22 @@ private fun AccountSection(viewModel: SkyViewModel) {
                                         account.loginMethod.takeIf { it.isNotBlank() },
                                         account.server.takeIf { it.isNotBlank() },
                                         account.note.takeIf { it.isNotBlank() },
-                                    ).joinToString(" · "),
+                                    ).joinToString(" \u00b7 "),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                                if (account.password.isNotBlank()) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "密码：" + if (revealed == account.id) account.password else "\u2022\u2022\u2022\u2022\u2022\u2022",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        TextButton(onClick = {
+                                            revealed = if (revealed == account.id) null else account.id
+                                        }) { Text(if (revealed == account.id) "隐藏" else "显示") }
+                                    }
+                                }
                             }
                             IconButton(onClick = { viewModel.deleteAccount(account) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "删除")
@@ -649,8 +561,8 @@ private fun AccountSection(viewModel: SkyViewModel) {
         AccountDialog(
             account = null,
             onDismiss = { showAdd = false },
-            onSave = { nickname, login, server, note ->
-                viewModel.addAccount(nickname, login, server, note)
+            onSave = { nickname, login, server, note, password ->
+                viewModel.saveAccount(null, nickname, login, server, note, password)
                 showAdd = false
             },
         )
@@ -660,10 +572,8 @@ private fun AccountSection(viewModel: SkyViewModel) {
         AccountDialog(
             account = account,
             onDismiss = { editing = null },
-            onSave = { nickname, login, server, note ->
-                viewModel.saveAccount(
-                    account.copy(nickname = nickname, loginMethod = login, server = server, note = note),
-                )
+            onSave = { nickname, login, server, note, password ->
+                viewModel.saveAccount(account, nickname, login, server, note, password)
                 editing = null
             },
         )
@@ -674,54 +584,69 @@ private fun AccountSection(viewModel: SkyViewModel) {
 private fun AccountDialog(
     account: SkyAccountEntity?,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, String) -> Unit,
+    onSave: (String, String, String, String, String) -> Unit,
 ) {
     var nickname by remember { mutableStateOf(account?.nickname ?: "") }
     var login by remember { mutableStateOf(account?.loginMethod ?: "") }
     var server by remember { mutableStateOf(account?.server ?: "国服") }
     var note by remember { mutableStateOf(account?.note ?: "") }
+    var password by remember { mutableStateOf(account?.password ?: "") }
+    var showPassword by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (account == null) "加一个号" else "编辑") },
+        title = { Text(if (account == null) "加一个号" else "改这个号") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = nickname,
                     onValueChange = { nickname = it },
-                    label = { Text("备注名（例如 小号1）") },
+                    label = { Text("备注名（比如 小号1）") },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = login,
                     onValueChange = { login = it },
-                    label = { Text("登录方式（华为 / 微信 / QQ / 手机号…）") },
+                    label = { Text("登录方式（华为 / 网易 / 微信…）") },
                     singleLine = true,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("国服", "国际服").forEach { name ->
-                        FilterChip(
-                            selected = server == name,
-                            onClick = { server = name },
-                            label = { Text(name) },
-                        )
-                    }
-                }
+                OutlinedTextField(
+                    value = server,
+                    onValueChange = { server = it },
+                    label = { Text("区服") },
+                    singleLine = true,
+                )
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
                     label = { Text("备注") },
                     singleLine = true,
                 )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("密码") },
+                    singleLine = true,
+                    visualTransformation = if (showPassword) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        TextButton(onClick = { showPassword = !showPassword }) {
+                            Text(if (showPassword) "隐藏" else "显示")
+                        }
+                    },
+                )
                 Text(
-                    text = "提醒：这里不存密码。",
+                    text = "\u26a0\ufe0f 明文存在本机、没有加密。",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (nickname.isNotBlank()) onSave(nickname, login, server, note) }) { Text("保存") }
+            TextButton(onClick = { onSave(nickname, login, server, note, password) }) { Text("保存") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )

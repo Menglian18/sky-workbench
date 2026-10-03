@@ -57,7 +57,7 @@ class BackupCodecTest {
             NumberRecordEntity(id = 9, tableId = 1, date = "2026-10-09", value = 62.4, note = "早上", createdAt = 5L, updatedAt = 6L),
         ),
         skyAccounts = listOf(
-            SkyAccountEntity(id = 1, nickname = "小号1", loginMethod = "华为", server = "国服", binding = "已绑", note = "主玩", sortOrder = 0),
+            SkyAccountEntity(id = 1, nickname = "小号1", loginMethod = "华为", server = "国服", binding = "已绑", note = "主玩", password = "abc123", sortOrder = 0),
         ),
         skyWishes = listOf(
             SkyWishEntity(id = 2, itemGuid = "abc", itemName = "斗篷", spiritName = "指路蜡烛匠", costCandle = 60, costHeart = 3, costAscended = 0, owned = true, obtained = false, sortOrder = 0),
