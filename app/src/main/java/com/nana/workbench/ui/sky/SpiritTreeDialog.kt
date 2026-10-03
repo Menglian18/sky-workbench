@@ -38,6 +38,9 @@ import com.nana.workbench.ui.common.RemoteImage
 fun SpiritTreeDialog(
     spiritName: String,
     tree: SpiritTree?,
+    treeCount: Int = 0,
+    candidates: List<Pair<String, String>> = emptyList(),
+    onPick: (String) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -60,10 +63,25 @@ fun SpiritTreeDialog(
 
                 if (tree == null || tree.nodes.isEmpty()) {
                     Text(
-                        text = "这位先祖没有打包兑换树数据（可能是活动或商城物品）。",
+                        // 1.2.1 第 5 条：把"数据载入情况"显示出来，一眼看出是数据问题还是名字没对上
+                        text = "没自动对上这位先祖（App 里已载入 $treeCount 棵兑换树）。",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = "多半是名字对不上。下面手动挑一位，就能看到他的兑换树：",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 300.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        candidates.forEach { (_, label) ->
+                            TextButton(onClick = { onPick(label) }) { Text(label) }
+                        }
+                    }
                 } else {
                     Text(
                         text = tree.totalText() + " · 共 ${tree.nodes.size} 件",

@@ -66,7 +66,7 @@ fun ToolsSection(viewModel: ToolsViewModel = viewModel()) {
         // ── 骰子 ──────────────────────────────────────────────────────────────
         val diceSides by viewModel.diceSides.collectAsState()
         val diceResult by viewModel.diceResult.collectAsState()
-        ToolCard(title = "骰子", hint = "选面数，点一下掷出结果。") {
+        ToolCard(title = "骰子", hint = "") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(6, 20, 100).forEach { sides ->
                     FilterChip(
@@ -96,7 +96,7 @@ fun ToolsSection(viewModel: ToolsViewModel = viewModel()) {
         val spinResult by viewModel.spinResult.collectAsState()
         val noRepeat by viewModel.noRepeat.collectAsState()
 
-        ToolCard(title = "转盘", hint = "选项能存好几套，比如「午饭吃什么」「周末去哪」。") {
+        ToolCard(title = "转盘", hint = "") {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,7 +146,7 @@ fun ToolsSection(viewModel: ToolsViewModel = viewModel()) {
         // ── 随机抽一个 ────────────────────────────────────────────────────────
         val randomResult by viewModel.randomResult.collectAsState()
 
-        ToolCard(title = "随机抽一个", hint = "写下几个名字，让 App 替你选一个。") {
+        ToolCard(title = "随机抽一个", hint = "") {
             if (randomList.isEmpty()) {
                 Text(
                     text = "还没有名单。点下面「编辑名单」写上几个。",
@@ -250,11 +250,13 @@ private fun ToolCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
-            Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (hint.isNotBlank()) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             content()
         }
     }

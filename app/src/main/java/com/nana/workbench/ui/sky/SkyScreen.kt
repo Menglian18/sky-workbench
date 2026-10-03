@@ -112,7 +112,7 @@ private fun formatTime(millis: Long?): String {
  */
 private fun costText(candles: Int, hearts: Int, ascended: Int): String {
     if (candles + hearts + ascended == 0) {
-        return "花的是季节蜡烛或活动货币，不占白蜡预算"
+        return "季节 / 活动货币"
     }
     return buildString {
         append("白蜡 ").append(candles)
@@ -127,6 +127,7 @@ private fun TravelingSection(
     codex: CodexViewModel = viewModel(),
 ) {
     var treeSpiritName by remember { mutableStateOf<String?>(null) }
+    val treeCount by codex.treeCount.collectAsState()
     val spirits by viewModel.travelingSpirits.collectAsState()
     val countdown by viewModel.countdown.collectAsState()
     val season by viewModel.currentSeason.collectAsState()
@@ -307,6 +308,9 @@ private fun TravelingSection(
             SpiritTreeDialog(
                 spiritName = name,
                 tree = codex.treeForName(name),
+                treeCount = treeCount,
+                candidates = codex.spiritsWithTrees(),
+                onPick = { picked -> treeSpiritName = picked },
                 onDismiss = { treeSpiritName = null },
             )
         }
@@ -448,11 +452,6 @@ private fun AccountSection(viewModel: SkyViewModel) {
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "按住左边的 \u2261 能调顺序；点一行可以改。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Text(
                 text = "\u26a0\ufe0f 密码是明文存在这台手机里的，没有加密。手机被别人拿到就能看到，想清楚再记。",
                 style = MaterialTheme.typography.bodySmall,

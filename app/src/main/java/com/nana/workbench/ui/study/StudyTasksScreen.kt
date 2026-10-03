@@ -227,7 +227,7 @@ fun StudyTasksScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "已完成 ${doneTasks.size} 件（已经在上面划线了）",
+                                    text = "已完成 ${doneTasks.size} 件",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.weight(1f),

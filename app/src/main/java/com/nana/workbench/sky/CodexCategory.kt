@@ -23,7 +23,8 @@ enum class CodexCategory(
     PROP("Prop", "道具", 9),
     SHOES("Shoes", "鞋子", 10),
     MUSIC("Music", "乐器乐谱", 11),
-    WING_BUFF("WingBuff", "光翼加成", 12),
+    // 1.2.1 改进 · 第 2 条：光翼加成不要了，直接从图鉴里去掉
+    WING_BUFF("WingBuff", "光翼加成", 12, showInCodex = false),
     EMOTE("Emote", "表情动作", 13),
     QUEST("Quest", "任务物品", 14, showInCodex = false),
     SPECIAL("Special", "其他占位", 15, showInCodex = false),

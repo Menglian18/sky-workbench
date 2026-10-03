@@ -145,8 +145,7 @@ fun SettingsScreen(
                 }
             }
             Text(
-                text = "说明：导入会用文件里的内容替换手机上现在的数据。导入前 App 会先把手机现状存在自己内部一份，" +
-                    "所以事后可以点「撤销这次导入」整个还原回去。",
+                text = "导入会替换手机上现在的数据；导入前会自动存一份，可点「撤销这次导入」还原。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -169,7 +168,7 @@ fun SettingsScreen(
                 }
             }
             Text(
-                text = "一键清理只清缓存和抓来的光遇数据，你自己记的计划、卡片、备忘、表格一条都不会动。",
+                text = "只清缓存与过期数据，你自己记的东西不动。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -178,11 +177,6 @@ fun SettingsScreen(
 
             // ── 主题与外观 ────────────────────────────────────────────────────
             SectionTitle("主题与外观")
-            Text(
-                text = "点一下立刻全局生效，不用重启。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             NanaPalettes.all.chunked(2).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { palette ->

@@ -21,8 +21,22 @@ data class CodexEntry(
     val ascended: Int = 0,
     val spiritId: String = "",
 ) {
-    /** 界面上显示的名字：中文优先 */
-    val displayName: String get() = nameZh.ifBlank { partZh.ifBlank { name.ifBlank { "未知物品" } } }
+    /**
+     * 界面上显示的名字（1.2.1 改进 · 第 1 条：名字一度全没了，这里保证一定有名字）。
+     *
+     * 拼成"中文部位名 · 英文名"，例如「斗篷 · Cape」：
+     * 中文在前看得懂，英文在后用来区分是哪一件。
+     */
+    val displayName: String get() {
+        val zh = nameZh.ifBlank { partZh }.trim()
+        val en = name.trim()
+        return when {
+            zh.isNotEmpty() && en.isNotEmpty() && zh != en -> "$zh · $en"
+            zh.isNotEmpty() -> zh
+            en.isNotEmpty() -> en
+            else -> "未知物品"
+        }
+    }
 
     val category: CodexCategory get() = CodexCategory.fromType(type)
 }

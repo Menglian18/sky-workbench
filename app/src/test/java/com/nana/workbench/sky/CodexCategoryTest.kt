@@ -36,7 +36,9 @@ class CodexCategoryTest {
         assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("WingBuff"))
         assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("Wing Buff"))
         assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("wingbuff"))
-        assertEquals(true, CodexCategory.WING_BUFF.showInCodex)
+        // 1.2.1 第 2 条：光翼加成不要了，图鉴里不再显示这一分类
+        assertEquals(false, CodexCategory.WING_BUFF.showInCodex)
+        assertEquals(false, CodexCategory.shownInCodex.any { it == CodexCategory.WING_BUFF })
     }
 
     @Test

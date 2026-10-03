@@ -117,7 +117,9 @@ fun CodexGridScreen(
                 val (category, entries) = groups[safeIndex]
                 // 1.2 第 5 条：表情动作同款不同等级合成一个格子，点开下滑看各级
                 val emoteGroups = if (category == CodexCategory.EMOTE) {
-                    EmoteGrouping.group(entries) { it.displayName }
+                    // 1.2.1 第 3 条：必须用能区分表情的名字来分组（显示名带的是通用部位名，
+                    // 拿它分组会把所有表情并成一个），所以这里用英文名，等级后缀由分组逻辑去掉
+                    EmoteGrouping.group(entries) { it.name.ifBlank { it.displayName } }
                 } else {
                     emptyList()
                 }
@@ -171,17 +173,6 @@ fun CodexGridScreen(
                                     overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center,
                                 )
-                                // 1.2 第 4 条：主名用中文（部位名），英文名放小字，方便分辨是哪一件
-                                if (entry.name.isNotBlank() && entry.name != entry.displayName) {
-                                    Text(
-                                        text = entry.name,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
                                 if (levels.size > 1) {
                                     Text(
                                         text = "${levels.size} 级 ▾",
@@ -231,11 +222,6 @@ private fun CodexDetailDialog(
                     imageSize = 96.dp,
                 )
                 if (levels.size > 1) {
-                    Text(
-                        text = "这个表情有 ${levels.size} 级，往下滑看每一级：",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
                     levels.forEachIndexed { index, level ->
                         Text(
                             text = "第 ${index + 1} 级：" + level.displayName,
@@ -287,11 +273,6 @@ private fun CodexDetailDialog(
                 )
                 Text(
                     text = "怎么来的：" + (howTo ?: "这件东西不在任何兑换树里（可能是活动或商城物品）"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "图片来自网络（sky-planner / 光遇 wiki）；没网时显示方块占位。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

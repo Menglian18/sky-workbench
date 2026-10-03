@@ -384,7 +384,7 @@ private fun DoneFooter(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "已完成 $count 件（已经在上面划线了）",
+            text = "已完成 $count 件",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
@@ -480,11 +480,6 @@ private fun AddTodoSheet(
                     },
                 ) { Text("完成") }
             }
-            Text(
-                text = "提示：「添加并继续」可以连着加好几条、面板不关；打完字直接点「完成」也会存下来。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -564,11 +559,6 @@ private fun EditTodoSheet(
 @Composable
 private fun QuadrantChips(priority: Int, onPriorityChange: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = "属于哪一格？",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         Quadrant.ordered.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { quadrant ->
