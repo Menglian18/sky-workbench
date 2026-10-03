@@ -31,6 +31,15 @@ class CodexCategoryTest {
     }
 
     @Test
+    fun `光翼加成的几种写法都认得`() {
+        // 1.2 第 5 条：光翼加成不能被漏掉
+        assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("WingBuff"))
+        assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("Wing Buff"))
+        assertEquals(CodexCategory.WING_BUFF, CodexCategory.fromType("wingbuff"))
+        assertEquals(true, CodexCategory.WING_BUFF.showInCodex)
+    }
+
+    @Test
     fun `占位和任务物品不放进图鉴`() {
         assertFalse(CodexCategory.SPECIAL.showInCodex)
         assertFalse(CodexCategory.QUEST.showInCodex)

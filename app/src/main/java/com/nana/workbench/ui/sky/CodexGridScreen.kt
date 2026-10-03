@@ -37,6 +37,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nana.workbench.sky.CodexEntry
 import com.nana.workbench.ui.common.EmptyState
 import com.nana.workbench.ui.common.RemoteImage
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import com.nana.workbench.sky.CodexCategory
+import com.nana.workbench.sky.EmoteGrouping
 
 /**
  * 图鉴（1.1 改进 · C3）。
@@ -58,7 +63,7 @@ fun CodexGridScreen(
     val total by viewModel.totalCount.collectAsState()
 
     var categoryIndex by remember { mutableIntStateOf(0) }
-    var selected by remember { mutableStateOf<CodexEntry?>(null) }
+    var selected by remember { mutableStateOf<Pair<CodexEntry, List<CodexEntry>>?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -110,8 +115,21 @@ fun CodexGridScreen(
                 }
 
                 val (category, entries) = groups[safeIndex]
+                // 1.2 第 5 条：表情动作同款不同等级合成一个格子，点开下滑看各级
+                val emoteGroups = if (category == CodexCategory.EMOTE) {
+                    EmoteGrouping.group(entries) { it.displayName }
+                } else {
+                    emptyList()
+                }
+                val shown: List<Pair<CodexEntry, List<CodexEntry>>> = if (emoteGroups.isEmpty()) {
+                    entries.map { it to listOf(it) }
+                } else {
+                    emoteGroups.map { (_, levels) -> levels.first() to levels }
+                }
+
                 Text(
-                    text = "${category.label} · ${entries.size} 件",
+                    text = "${category.label} · ${entries.size} 件" +
+                        if (emoteGroups.isNotEmpty()) "（合起来 ${emoteGroups.size} 个表情）" else "",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -124,12 +142,14 @@ fun CodexGridScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(entries, key = { it.guid }) { entry ->
+                    items(shown, key = { it.first.guid }) { pick ->
+                        val entry = pick.first
+                        val levels = pick.second
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surface,
                             ),
-                            modifier = Modifier.clickable { selected = entry },
+                            modifier = Modifier.clickable { selected = entry to levels },
                         ) {
                             Column(
                                 modifier = Modifier
@@ -151,6 +171,13 @@ fun CodexGridScreen(
                                     overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center,
                                 )
+                                if (levels.size > 1) {
+                                    Text(
+                                        text = "${levels.size} 级 ▾",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }
@@ -159,10 +186,11 @@ fun CodexGridScreen(
         }
     }
 
-    selected?.let { entry ->
+    selected?.let { pick ->
         CodexDetailDialog(
-            entry = entry,
-            howTo = viewModel.howToGet(entry),
+            entry = pick.first,
+            levels = pick.second,
+            howTo = viewModel.howToGet(pick.first),
             onDismiss = { selected = null },
         )
     }
@@ -171,6 +199,7 @@ fun CodexGridScreen(
 @Composable
 private fun CodexDetailDialog(
     entry: CodexEntry,
+    levels: List<CodexEntry>,
     howTo: String?,
     onDismiss: () -> Unit,
 ) {
@@ -178,12 +207,46 @@ private fun CodexDetailDialog(
         onDismissRequest = onDismiss,
         title = { Text(entry.displayName) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                // 1.2 第 5 条：表情点开后可以往下滑看各级
+                modifier = Modifier
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 RemoteImage(
                     url = entry.icon,
                     contentDescription = entry.displayName,
                     imageSize = 96.dp,
                 )
+                if (levels.size > 1) {
+                    Text(
+                        text = "这个表情有 ${levels.size} 级，往下滑看每一级：",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    levels.forEachIndexed { index, level ->
+                        Text(
+                            text = "第 ${index + 1} 级：" + level.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = "　要花：" + buildString {
+                                if (level.candles + level.hearts + level.ascended == 0) {
+                                    append("不花白蜡（季节或活动货币）")
+                                } else {
+                                    append("白蜡 ${level.candles}")
+                                    if (level.hearts > 0) append(" · 爱心 ${level.hearts}")
+                                    if (level.ascended > 0) append(" · 升华 ${level.ascended}")
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surface)
+                }
                 Text(
                     text = "分类：" + entry.category.label,
                     style = MaterialTheme.typography.bodyMedium,

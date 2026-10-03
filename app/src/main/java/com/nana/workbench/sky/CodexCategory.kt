@@ -36,9 +36,15 @@ enum class CodexCategory(
         /** 图鉴里真正会显示的那些分类 */
         val shownInCodex: List<CodexCategory> get() = displayOrder.filter { it.showInCodex }
 
-        /** 认不出的分类一律归到"其他占位"，不崩 */
-        fun fromType(type: String): CodexCategory =
-            entries.firstOrNull { it.type.equals(type.trim(), ignoreCase = true) } ?: SPECIAL
+        /**
+         * 认不出的分类一律归到"其他占位"，不崩。
+         * 比对时把空格也去掉，这样 "Wing Buff" 和 "WingBuff" 都认
+         * （1.2 第 5 条：光翼加成不能丢）。
+         */
+        fun fromType(type: String): CodexCategory {
+            val key = type.replace(" ", "").trim()
+            return entries.firstOrNull { it.type.equals(key, ignoreCase = true) } ?: SPECIAL
+        }
 
         /** 分类的中文名；认不出就给"其他占位" */
         fun labelOf(type: String): String = fromType(type).label

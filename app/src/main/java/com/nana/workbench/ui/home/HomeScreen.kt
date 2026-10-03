@@ -152,31 +152,9 @@ fun HomeScreen(
 
             // ── 今日复习 ──────────────────────────────────────────────
             // 1.1 改进第 3 条：首页要有"紧急 / 重要四象限"
+            // 1.2 改进第 2 条：改成平面直角坐标系的样子，四格颜色深浅不同
             SummaryCard("紧急 / 重要四象限", onClick = { onOpenTab(TabDestination.TODAY) }) {
-                Quadrant.ordered.forEach { quadrant ->
-                    val items = quadrants[quadrant].orEmpty()
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = quadrant.shortTitle,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = if (items.isEmpty()) "—" else "${items.size} 件",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                    if (items.isNotEmpty()) {
-                        Text(
-                            text = items.take(3).joinToString("、") { it.title } +
-                                if (items.size > 3) "…" else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                QuadrantChart(groups = quadrants)
             }
 
             SummaryCard("学习安排", onClick = { onOpenTab(TabDestination.STUDY) }) {
