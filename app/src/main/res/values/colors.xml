@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动窗口底色，与默认主题（深夜黑）一致，避免启动瞬间闪白光 -->
+    <color name="window_background">#0F1115</color>
+    <color name="ic_launcher_background">#16243D</color>
+</resources>

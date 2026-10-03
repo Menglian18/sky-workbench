@@ -1,0 +1,25 @@
+# 编译产物
+build/
+.gradle/
+*.apk
+*.aab
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+
+# 签名密钥与口令（绝不外传、绝不提交）
+_keys/
+*.jks
+*.keystore
+keystore.properties
+
+# 开发工具目录（若有人把工具放进项目里）
+_toolchain/
+
+# 编辑器 / 系统
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自绘图标：一个"已打勾的清单"，全部用路径画，不含任何第三方图片素材 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M29,45.6l3.6,3.6 6.8,-7.4 2.7,2.6 -9.5,10.2 -6.3,-6.3z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,46h25v4.2h-25z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M29,57.6l3.6,3.6 6.8,-7.4 2.7,2.6 -9.5,10.2 -6.3,-6.3z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,58h25v4.2h-25z" />
+
+    <path
+        android:fillColor="#F2C879"
+        android:pathData="M29,69.6l3.6,3.6 6.8,-7.4 2.7,2.6 -9.5,10.2 -6.3,-6.3z" />
+    <path
+        android:fillColor="#F2C879"
+        android:pathData="M46,70h25v4.2h-25z" />
+</vector>
