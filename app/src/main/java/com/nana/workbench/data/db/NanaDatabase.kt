@@ -22,7 +22,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SkySeasonEntity::class,
         AppStateEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class NanaDatabase : RoomDatabase() {
@@ -55,6 +55,20 @@ abstract class NanaDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 2 → 3：学习任务加上"学科、同科顺序、有没有划掉"三个字段
+         * （1.1 改进：今日复习改成"学科 + 任务"）。
+         *
+         * 只**加列**、不改也不删任何已有列，所以老数据（如果用户之前用过学习卡片）一条都不会丢。
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE study_card ADD COLUMN subject TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE study_card ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE study_card ADD COLUMN done INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var instance: NanaDatabase? = null
 
@@ -64,7 +78,7 @@ abstract class NanaDatabase : RoomDatabase() {
                     context.applicationContext,
                     NanaDatabase::class.java,
                     DB_NAME,
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
             }
     }
 }

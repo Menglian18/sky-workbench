@@ -77,14 +77,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    /** 今天该复习多少张 */
-    val studyDueCount: StateFlow<Int> = db.studyDao()
-        .watchDueCount(System.currentTimeMillis())
+    // 1.1 改进：学习版块改成"学科 + 任务"、不再有复习排期，所以首页这几项也跟着换。
+
+    /** 学习安排：还没做完的任务数 */
+    val studyOpenCount: StateFlow<Int> = db.studyDao()
+        .watchOpenTaskCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    /** 今天已经复习了多少张 */
-    val studyDoneToday: StateFlow<Int> = db.studyDao()
-        .watchReviewsSince(logicalDayStartMillis())
+    /** 学习安排：已划掉的任务数 */
+    val studyDoneCount: StateFlow<Int> = db.studyDao()
+        .watchDoneTaskCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** 学习安排：有几个学科 */
+    val studySubjectCount: StateFlow<Int> = db.studyDao()
+        .watchSubjectCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     /** 置顶的备忘（最多 3 条） */

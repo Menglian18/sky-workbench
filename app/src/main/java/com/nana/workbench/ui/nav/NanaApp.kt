@@ -30,7 +30,7 @@ import com.nana.workbench.ui.home.HomeScreen
 import com.nana.workbench.ui.memo.MemoScreen
 import com.nana.workbench.ui.settings.SettingsScreen
 import com.nana.workbench.ui.sky.SkyScreen
-import com.nana.workbench.ui.study.StudyScreen
+import com.nana.workbench.ui.study.StudyTasksScreen
 import com.nana.workbench.ui.today.TodayScreen
 
 private fun TabDestination.icon(): ImageVector = when (this) {
@@ -93,7 +93,7 @@ fun NanaApp(navController: NavHostController = rememberNavController()) {
             }
             composable(TabDestination.TODAY.route) { TodayScreen() }
             composable(TabDestination.PLAY.route) { SkyScreen() }
-            composable(TabDestination.STUDY.route) { StudyScreen() }
+            composable(TabDestination.STUDY.route) { StudyTasksScreen() }
             composable(TabDestination.MEMO.route) { MemoScreen() }
             composable(Routes.SETTINGS) { SettingsScreen() }
         }

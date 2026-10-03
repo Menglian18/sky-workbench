@@ -116,6 +116,60 @@ interface StudyDao {
     @Query("DELETE FROM study_card")
     suspend fun deleteAll()
 
+    // ── 1.1 改进：今日复习改成"学科 + 任务" ──────────────────────────────────
+
+    /** 所有学科名（去重、去掉空的），按名字排 */
+    @Query("SELECT DISTINCT subject FROM study_card WHERE subject != '' ORDER BY subject")
+    fun watchSubjects(): Flow<List<String>>
+
+    /** 某个学科下的任务：没划掉的在前，同科内按手工顺序 */
+    @Query("SELECT * FROM study_card WHERE subject = :subject ORDER BY done, sortOrder, id")
+    fun watchTasksInSubject(subject: String): Flow<List<StudyCardEntity>>
+
+    /** 没归学科的任务（老数据可能落在这一堆） */
+    @Query("SELECT * FROM study_card WHERE subject = '' ORDER BY done, sortOrder, id")
+    fun watchTasksWithoutSubject(): Flow<List<StudyCardEntity>>
+
+    /** 某学科下已有的最大手工顺序；新建的任务排在最后 */
+    @Query("SELECT MAX(sortOrder) FROM study_card WHERE subject = :subject")
+    suspend fun maxSortOrderInSubject(subject: String): Int?
+
+    /** 划掉 / 取消划掉 */
+    @Query("UPDATE study_card SET done = :done, updatedAt = :now WHERE id = :id")
+    suspend fun setDone(id: Long, done: Boolean, now: Long)
+
+    /** 改一条任务的学科 */
+    @Query("UPDATE study_card SET subject = :subject, updatedAt = :now WHERE id = :id")
+    suspend fun moveToSubject(id: Long, subject: String, now: Long)
+
+    /** 整个学科改名（该学科下所有任务一起改） */
+    @Query("UPDATE study_card SET subject = :newName, updatedAt = :now WHERE subject = :oldName")
+    suspend fun renameSubject(oldName: String, newName: String, now: Long)
+
+    /** 删掉整个学科（连同它下面的任务） */
+    @Query("DELETE FROM study_card WHERE subject = :subject")
+    suspend fun deleteSubject(subject: String)
+
+    /** 只接受一份份任务用：查某学科下的任务（非 Flow，导入时用得上） */
+    @Query("SELECT * FROM study_card WHERE subject = :subject ORDER BY sortOrder, id")
+    suspend fun listTasksInSubject(subject: String): List<StudyCardEntity>
+
+    /** 全部任务（首页统计用）：未划掉的在前 */
+    @Query("SELECT * FROM study_card ORDER BY done, sortOrder, id")
+    fun watchAllTasks(): Flow<List<StudyCardEntity>>
+
+    /** 首页用：还没划掉的任务数 */
+    @Query("SELECT COUNT(*) FROM study_card WHERE done = 0")
+    fun watchOpenTaskCount(): Flow<Int>
+
+    /** 首页用：已划掉的任务数 */
+    @Query("SELECT COUNT(*) FROM study_card WHERE done = 1")
+    fun watchDoneTaskCount(): Flow<Int>
+
+    /** 首页用：有几个学科 */
+    @Query("SELECT COUNT(DISTINCT subject) FROM study_card WHERE subject != ''")
+    fun watchSubjectCount(): Flow<Int>
+
     // 复习记录
     @Insert
     suspend fun insertLog(log: StudyReviewLogEntity)

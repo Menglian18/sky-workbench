@@ -1,5 +1,6 @@
 package com.nana.workbench.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -38,24 +39,40 @@ data class TodoEntity(
     val updatedAt: Long,
 )
 
-// ── 2. 学习卡片 ──────────────────────────────────────────────────────────────
+// ── 2. 学习任务（1.1 改进：原"学习卡片"改成"学科 + 任务"）────────────────────
+//
+// 说明：1.1 起不再按遗忘曲线排复习，所以 phase / stability / difficulty / reps /
+// lapses / lastReviewedAt / dueAt 这些字段**不再参与任何逻辑**，只是为了让老数据
+// （如果用户之前用过卡片）留着不丢。任务内容存在 front 里。
 
 @Entity(tableName = "study_card")
 data class StudyCardEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** 任务内容 */
     val front: String,
-    val back: String,
+    /** 老字段，留空不用 */
+    val back: String = "",
+    /** 老字段，留空不用 */
     val note: String = "",
-    /** StudyPhase 的序号：0 新卡 / 1 学习中 / 2 复习中 / 3 已暂停 */
+    /** 学科名（用户自己填，例如"数学"）；空字符串表示还没归到任何学科 */
+    @ColumnInfo(defaultValue = "''")
+    val subject: String = "",
+    /** 同一学科内的手工顺序（拖拽调整） */
+    @ColumnInfo(defaultValue = "0")
+    val sortOrder: Int = 0,
+    /** 划掉了没有 */
+    @ColumnInfo(defaultValue = "0")
+    val done: Boolean = false,
+    /** 老字段：StudyPhase 的序号，不再使用 */
     val phase: Int = 0,
     val stability: Double = 0.0,
     val difficulty: Double = 0.0,
     val reps: Int = 0,
     val lapses: Int = 0,
     val lastReviewedAt: Long? = null,
-    val dueAt: Long,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val dueAt: Long = 0L,
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
 )
 
 // ── 3. 复习记录 ──────────────────────────────────────────────────────────────

@@ -54,8 +54,9 @@ fun HomeScreen(
     val openCount by viewModel.openCount.collectAsState()
     val topTodos by viewModel.topTodos.collectAsState()
     val quadrants by viewModel.quadrants.collectAsState()
-    val studyDue by viewModel.studyDueCount.collectAsState()
-    val studyDone by viewModel.studyDoneToday.collectAsState()
+    val subjectCount by viewModel.studySubjectCount.collectAsState()
+    val openTaskCount by viewModel.studyOpenCount.collectAsState()
+    val doneTaskCount by viewModel.studyDoneCount.collectAsState()
     val pinned by viewModel.pinnedMemos.collectAsState()
     val countdown by viewModel.countdown.collectAsState()
     val season by viewModel.currentSeason.collectAsState()
@@ -178,16 +179,16 @@ fun HomeScreen(
                 }
             }
 
-            SummaryCard("今日复习", onClick = { onOpenTab(TabDestination.STUDY) }) {
-                if (studyDue == 0 && studyDone == 0) {
+            SummaryCard("学习安排", onClick = { onOpenTab(TabDestination.STUDY) }) {
+                if (subjectCount == 0) {
                     Text(
-                        text = "还没有学习卡片，点这里添加 →",
+                        text = "还没有学科，点这里去建一个 →",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
                     Text(
-                        text = "今天该复习 $studyDue 张 · 已完成 $studyDone",
+                        text = "$subjectCount 个学科 · 没做完 $openTaskCount 件 · 已划掉 $doneTaskCount 件",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
