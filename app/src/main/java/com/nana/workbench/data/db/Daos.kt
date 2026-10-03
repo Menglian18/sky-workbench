@@ -27,6 +27,10 @@ interface TodoDao {
     @Query("SELECT COUNT(*) FROM todo_item WHERE dueDate = :date AND done = 0")
     fun watchOpenCount(date: String): Flow<Int>
 
+    /** 某天已有的最大手工顺序；新建的条目排在最后（1.1 改进第 3 条：拖拽排序） */
+    @Query("SELECT MAX(sortOrder) FROM todo_item WHERE dueDate = :date")
+    suspend fun maxSortOrder(date: String): Int?
+
     @Query("SELECT * FROM todo_item WHERE done = 0 ORDER BY dueDate, sortOrder, id")
     suspend fun listAllOpen(): List<TodoEntity>
 

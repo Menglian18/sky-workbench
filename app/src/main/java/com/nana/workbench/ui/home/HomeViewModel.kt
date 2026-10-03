@@ -11,6 +11,8 @@ import com.nana.workbench.sky.SkyCountdown
 import com.nana.workbench.sky.SkyCountdownPicks
 import com.nana.workbench.today.TodoOrdering
 import com.nana.workbench.today.TodoRolloverRunner
+import com.nana.workbench.today.Quadrant
+import com.nana.workbench.today.quadrantOf
 import com.nana.workbench.util.DateKeys
 import com.nana.workbench.util.LogicalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,6 +62,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         .flatMapLatest { db.todoDao().watchForDate(it) }
         .map { TodoOrdering.sortForDisplay(it).take(3) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * 首页的"紧急 / 重要四象限"（1.1 改进第 3 条）。
+     * 四格都要显示（哪怕是 0 条），所以先把四格都摆好，再往里填。
+     */
+    val quadrants: StateFlow<Map<Quadrant, List<TodoEntity>>> = dateKey
+        .flatMapLatest { db.todoDao().watchForDate(it) }
+        .map { items ->
+            val sorted = TodoOrdering.sortForDisplay(items)
+            Quadrant.ordered.associateWith { quadrant ->
+                sorted.filter { quadrantOf(it.priority) == quadrant }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** 今天该复习多少张 */
     val studyDueCount: StateFlow<Int> = db.studyDao()

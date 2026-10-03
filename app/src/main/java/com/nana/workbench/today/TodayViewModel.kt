@@ -62,11 +62,17 @@ class TodayViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isViewingToday(): Boolean = _dateKey.value == DateKeys.todayKey()
 
-    fun add(title: String, priority: Int = 0, timePoint: String? = null) {
+    /**
+     * 加一条。[dateKey] 是用户在面板里选的日期（1.1 改进第 2 条），
+     * 没选或选了坏值就落到当前正在看的那一天。
+     */
+    fun add(title: String, priority: Int = 0, timePoint: String? = null, dateKey: String? = null) {
         val text = title.trim()
         if (text.isEmpty()) return
-        val date = _dateKey.value
+        val date = TodoSchedule.safeDateKey(dateKey, _dateKey.value)
         viewModelScope.launch {
+            // 排在当天已有条目的最后（拖拽排序要靠这个顺序）
+            val nextOrder = (dao.maxSortOrder(date) ?: 0) + 1
             dao.insert(
                 TodoEntity(
                     title = text,
@@ -74,6 +80,7 @@ class TodayViewModel(application: Application) : AndroidViewModel(application) {
                     timePoint = timePoint?.takeIf { it.isNotBlank() },
                     originalDate = date,
                     dueDate = date,
+                    sortOrder = nextOrder,
                     createdAt = now(),
                     updatedAt = now(),
                 ),
@@ -96,6 +103,26 @@ class TodayViewModel(application: Application) : AndroidViewModel(application) {
 
     fun save(item: TodoEntity) {
         viewModelScope.launch { dao.update(item.copy(updatedAt = now())) }
+    }
+
+    /**
+     * 拖拽排序（1.1 改进第 3 条）。
+     *
+     * [items] 是屏幕上看到的顺序；把第 [from] 条挪到第 [to] 条的位置后，
+     * 按象限分组重新编号写回去（同一格内从 1 开始）。
+     */
+    fun reorder(items: List<TodoEntity>, from: Int, to: Int) {
+        val moved = items.moveItem(from, to)
+        if (moved.map { it.id } == items.map { it.id }) return
+        viewModelScope.launch {
+            val byId = moved.associateBy { it.id }
+            renumberWithinGroups(moved.map { it.id to it.priority }).forEach { (id, order) ->
+                val item = byId[id] ?: return@forEach
+                if (item.sortOrder != order) {
+                    dao.update(item.copy(sortOrder = order, updatedAt = now()))
+                }
+            }
+        }
     }
 
     fun delete(item: TodoEntity) {

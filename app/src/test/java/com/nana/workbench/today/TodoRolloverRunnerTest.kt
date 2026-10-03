@@ -24,6 +24,9 @@ class TodoRolloverRunnerTest {
         override suspend fun listUnfinishedBefore(date: String): List<TodoEntity> =
             items.filter { !it.done && it.dueDate < date }
 
+        override suspend fun maxSortOrder(date: String): Int? =
+            items.filter { it.dueDate == date }.maxOfOrNull { it.sortOrder }
+
         override suspend fun update(item: TodoEntity) {
             updateCount++
             val index = items.indexOfFirst { it.id == item.id }
