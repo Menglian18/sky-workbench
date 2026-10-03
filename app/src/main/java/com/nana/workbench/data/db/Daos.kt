@@ -378,6 +378,14 @@ interface SkyDao {
     @Query("DELETE FROM sky_traveling_spirit")
     suspend fun deleteAllTravelingSpirits()
 
+    /** 按 id 精确删除（1.1 改进 · D1：只清早就过期的，不碰正在进行的） */
+    @Query("DELETE FROM sky_traveling_spirit WHERE id IN (:ids)")
+    suspend fun deleteTravelingSpiritsByIds(ids: List<Long>)
+
+    /** 按 id 精确删除季节 */
+    @Query("DELETE FROM sky_season WHERE id IN (:ids)")
+    suspend fun deleteSeasonsByIds(ids: List<Long>)
+
     // 季节（抓来的）
     @Query("SELECT * FROM sky_season ORDER BY startDate DESC")
     fun watchSeasons(): Flow<List<SkySeasonEntity>>

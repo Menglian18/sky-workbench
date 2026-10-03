@@ -73,11 +73,12 @@ fun MemoScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("生活文本") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("数字表格") })
         }
         when (tab) {
             0 -> MemoTextSection(viewModel = viewModel)
-            else -> NumberSection()
+            else -> {
+                // 1.1 改进 · D3：数字表格已按要求删除
+            }
         }
     }
 }

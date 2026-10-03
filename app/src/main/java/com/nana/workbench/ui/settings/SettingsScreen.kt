@@ -162,10 +162,10 @@ fun SettingsScreen(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = dataViewModel::previewClean, enabled = !busy) {
-                    Text("一键清理")
+                    Text("清理缓存与过期数据")
                 }
                 OutlinedButton(onClick = { showClearAll = true }, enabled = !busy) {
-                    Text("清空全部数据")
+                    Text("全部重置（清空所有数据）")
                 }
             }
             Text(
@@ -280,7 +280,7 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("可以清出约 ${formatSize(preview.cacheBytes)}。")
-                    Text("还会清掉抓来的复刻 ${preview.spirits} 条、季节 ${preview.seasons} 条（你可以重新联网获取）。")
+                    Text("还会清掉早就过期的复刻 ${preview.spirits} 条、季节 ${preview.seasons} 条。**正在复刻的不会动**，需要时重新联网获取即可。")
                     Text(
                         text = "你自己记的计划、学习卡、备忘、数字表格一条都不会动。",
                         style = MaterialTheme.typography.bodySmall,

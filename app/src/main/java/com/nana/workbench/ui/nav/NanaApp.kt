@@ -32,6 +32,7 @@ import com.nana.workbench.ui.settings.SettingsScreen
 import com.nana.workbench.ui.sky.SkyScreen
 import com.nana.workbench.ui.study.StudyTasksScreen
 import com.nana.workbench.ui.today.TodayScreen
+import androidx.compose.material.icons.filled.ArrowBack
 
 private fun TabDestination.icon(): ImageVector = when (this) {
     TabDestination.HOME -> Icons.Filled.Home
@@ -57,6 +58,14 @@ fun NanaApp(navController: NavHostController = rememberNavController()) {
         topBar = {
             TopAppBar(
                 title = { Text(title) },
+                navigationIcon = {
+                    // 1.1 改进 · D2：进设置后要能退出来
+                    if (currentRoute == Routes.SETTINGS) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
                     titleContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,

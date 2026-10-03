@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import com.nana.workbench.App
 import com.nana.workbench.data.db.AppStateEntity
+import com.nana.workbench.sky.SkyCleanup
+import com.nana.workbench.util.DateKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -133,10 +135,12 @@ class BackupManager(private val context: Context) {
     // ── 一键清理 ──────────────────────────────────────────────────────────────
 
     suspend fun previewClean(): CleanPreview = withContext(Dispatchers.IO) {
+        // 1.1 改进 · D1：只把"早就过期的抓取数据"算进来
+        val today = DateKeys.todayKey()
         CleanPreview(
             cacheBytes = cacheSize(),
-            spirits = database.skyDao().listTravelingSpirits().count { !it.manuallyEdited },
-            seasons = database.skyDao().listSeasons().count { !it.manuallyEdited },
+            spirits = SkyCleanup.expiredSpirits(database.skyDao().listTravelingSpirits(), today).size,
+            seasons = SkyCleanup.expiredSeasons(database.skyDao().listSeasons(), today).size,
         )
     }
 
@@ -147,14 +151,30 @@ class BackupManager(private val context: Context) {
     suspend fun cleanJunk(): CleanResult = withContext(Dispatchers.IO) {
         val before = cacheSize()
         clearCache()
-        val spirits = database.skyDao().listTravelingSpirits().count { !it.manuallyEdited }
-        val seasons = database.skyDao().listSeasons().count { !it.manuallyEdited }
-        database.skyDao().deleteFetchedTravelingSpirits()
-        database.skyDao().deleteFetchedSeasons()
+
+        // 1.1 改进 · D1（用户反馈"清完像初始化了"）：
+        // 原来这里把抓来的复刻/季节**全部**删掉，连正在复刻的都删，看着就像数据没了。
+        // 现在只删"结束超过 7 天"的那些；正在进行的、手动改过的、以及用户自己记的
+        // 计划/学习/备忘/账号 —— 一律不动。
+        val dao = database.skyDao()
+        val today = DateKeys.todayKey()
+        val expiredSpirits = SkyCleanup.expiredSpirits(dao.listTravelingSpirits(), today)
+        val expiredSeasons = SkyCleanup.expiredSeasons(dao.listSeasons(), today)
+        if (expiredSpirits.isNotEmpty()) {
+            dao.deleteTravelingSpiritsByIds(expiredSpirits.map { it.id })
+        }
+        if (expiredSeasons.isNotEmpty()) {
+            dao.deleteSeasonsByIds(expiredSeasons.map { it.id })
+        }
+
         database.appStateDao().put(
             AppStateEntity(KEY_LAST_CLEAN, System.currentTimeMillis().toString()),
         )
-        CleanResult(freedBytes = (before - cacheSize()).coerceAtLeast(0L), spirits = spirits, seasons = seasons)
+        CleanResult(
+            freedBytes = (before - cacheSize()).coerceAtLeast(0L),
+            spirits = expiredSpirits.size,
+            seasons = expiredSeasons.size,
+        )
     }
 
     // ── 占用空间与清空 ────────────────────────────────────────────────────────
