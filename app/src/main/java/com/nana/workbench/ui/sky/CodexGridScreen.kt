@@ -171,6 +171,17 @@ fun CodexGridScreen(
                                     overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center,
                                 )
+                                // 1.2 第 4 条：主名用中文（部位名），英文名放小字，方便分辨是哪一件
+                                if (entry.name.isNotBlank() && entry.name != entry.displayName) {
+                                    Text(
+                                        text = entry.name,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                                 if (levels.size > 1) {
                                     Text(
                                         text = "${levels.size} 级 ▾",
