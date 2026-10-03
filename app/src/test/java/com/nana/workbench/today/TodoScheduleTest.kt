@@ -158,4 +158,40 @@ class TodoScheduleTest {
         assertEquals(0, MINUTE_STEPS.first())
         assertEquals(55, MINUTE_STEPS.last())
     }
+
+    @Test
+    fun `精确到分的加减是一分钟一档`() {
+        assertEquals(31, shiftMinuteExact(30, forward = true))
+        assertEquals(29, shiftMinuteExact(30, forward = false))
+        assertEquals(38, shiftMinuteExact(37, forward = true))
+        assertEquals(36, shiftMinuteExact(37, forward = false))
+    }
+
+    @Test
+    fun `精确到分时 0 和 59 会绕回`() {
+        assertEquals(0, shiftMinuteExact(59, forward = true))
+        assertEquals(59, shiftMinuteExact(0, forward = false))
+    }
+
+    @Test
+    fun `精确到分时越界值会被夹回来`() {
+        assertEquals(0, shiftMinuteExact(60, forward = true))
+        assertEquals(59, shiftMinuteExact(-1, forward = false))
+        // 999 先被夹到 59，再往前退一分钟 = 58
+        assertEquals(58, shiftMinuteExact(999, forward = false))
+        assertEquals(0, shiftMinuteExact(999, forward = true))
+    }
+
+    @Test
+    fun `每一分钟都能选到`() {
+        // 从 0 一直往后加，应该能把 60 个分钟值全走一遍（1.2 第 3 条要求精确到分）
+        val seen = mutableSetOf<Int>()
+        var minute = 0
+        repeat(60) {
+            seen += minute
+            minute = shiftMinuteExact(minute, forward = true)
+        }
+        assertEquals(60, seen.size)
+        assertEquals(0, minute)
+    }
 }

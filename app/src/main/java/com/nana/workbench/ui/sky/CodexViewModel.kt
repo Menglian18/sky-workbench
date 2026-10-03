@@ -7,6 +7,7 @@ import com.nana.workbench.sky.CodexAssets
 import com.nana.workbench.sky.CodexCategory
 import com.nana.workbench.sky.CodexData
 import com.nana.workbench.sky.CodexEntry
+import com.nana.workbench.sky.SpiritNameIndex
 import com.nana.workbench.sky.SpiritTree
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -74,11 +75,22 @@ class CodexViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 用"复刻条目上的先祖名"去对上先祖，再取它的兑换树（1.1 改进 · C2）。
      * 复刻数据来自 wiki（只有名字），兑换树来自 SkyGame-Data（按 guid），两者靠名字对上。
+     * 1.2 第 1 条修的就是这里：数据里原先缺 guid，导致永远查不到。
      */
     fun treeForName(spiritName: String): SpiritTree? {
-        val guid = data.value.spiritIdByName[CodexAssets.normalizeName(spiritName)] ?: return null
+        val guid = SpiritNameIndex.find(spiritName, data.value.spiritIdByName) ?: return null
         return data.value.trees[guid]
     }
+
+    /** 有没有载入到兑换树（界面据此判断"是没数据还是没对上"） */
+    val treeCount: StateFlow<Int> = data
+        .map { it.trees.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** 所有有兑换树的先祖（按名字排序），给"手动挑一位先祖"用 */
+    fun spiritsWithTrees(): List<Pair<String, String>> = data.value.trees.keys
+        .mapNotNull { guid -> data.value.spiritNames[guid]?.let { guid to it } }
+        .sortedBy { it.second }
 
     /** 先祖显示名：知道 guid 就用打包好的名字，不知道就原样返回传进来的 */
     fun spiritDisplayName(spiritId: String, fallback: String): String =

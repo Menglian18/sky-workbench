@@ -32,6 +32,8 @@ import com.nana.workbench.ui.settings.SettingsScreen
 import com.nana.workbench.ui.sky.SkyScreen
 import com.nana.workbench.ui.study.StudyTasksScreen
 import com.nana.workbench.ui.today.TodayScreen
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.material.icons.filled.ArrowBack
 
 private fun TabDestination.icon(): ImageVector = when (this) {
@@ -96,6 +98,11 @@ fun NanaApp(navController: NavHostController = rememberNavController()) {
             navController = navController,
             startDestination = TabDestination.default.route,
             modifier = Modifier.padding(innerPadding),
+            // 1.2 改进第 7 条：不要页面过渡动画，切换直接到位
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
             composable(TabDestination.HOME.route) {
                 HomeScreen(onOpenTab = { tab -> navController.switchTab(tab) })

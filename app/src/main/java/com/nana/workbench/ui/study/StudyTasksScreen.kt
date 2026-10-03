@@ -301,7 +301,8 @@ private fun StudyTaskRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = if (draggable) "≡" else "🔒",
+                    // 1.2 改进第 6 条：被锁（已划掉）的任务前面不要带锁的图形
+                    text = if (draggable) "≡" else "",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

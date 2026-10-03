@@ -50,24 +50,27 @@ class CodexAssets(private val context: Context) {
         val trees = runCatching {
             ExchangeTreeParser.parse(read("codex/trees.json")).associateBy { it.spiritId }
         }.getOrDefault(emptyMap())
-        val spiritNames = runCatching { parseSpiritNames(read("codex/spirits.json")) }
-            .getOrDefault(emptyMap())
-        val byName = spiritNames.entries.associate { (guid, name) -> normalizeName(name) to guid }
-        CodexData(entries = entries, trees = trees, spiritNames = spiritNames, spiritIdByName = byName)
+        val parsed = runCatching { parseSpirits(read("codex/spirits.json")) }.getOrDefault(emptyMap())
+        val spiritNames = parsed.mapValues { (_, pair) -> pair.first.ifBlank { pair.second } }
+        // 中文名与英文名**都**建进索引：复刻数据里是中文名，图鉴里可能是英文名，两边都得能对上
+        // （1.2 第 1 条就是这里没建好，导致"看兑换树"点开什么也没有）
+        val index = SpiritNameIndex.buildNames(
+            parsed.mapValues { (_, pair) -> listOf(pair.first, pair.second) },
+        )
+        CodexData(entries = entries, trees = trees, spiritNames = spiritNames, spiritIdByName = index)
     }
 
-    /** 先祖显示名：中文优先，没有就用英文 */
-    private fun parseSpiritNames(text: String): Map<String, String> {
+    /** 先祖：guid →（中文名, 英文名） */
+    private fun parseSpirits(text: String): Map<String, Pair<String, String>> {
         val array = runCatching { JSONArray(text) }.getOrNull()
             ?: runCatching { JSONObject(text).optJSONArray("items") }.getOrNull()
             ?: return emptyMap()
-        val result = mutableMapOf<String, String>()
+        val result = mutableMapOf<String, Pair<String, String>>()
         for (index in 0 until array.length()) {
             val obj = array.optJSONObject(index) ?: continue
             val guid = obj.optString("guid")
             if (guid.isEmpty()) continue
-            val name = obj.optString("nameZh").ifBlank { obj.optString("nameEn") }
-            if (name.isNotBlank()) result[guid] = name
+            result[guid] = obj.optString("nameZh") to obj.optString("nameEn")
         }
         return result
     }
@@ -99,10 +102,5 @@ class CodexAssets(private val context: Context) {
             )
         }
         return result
-    }
-
-    companion object {
-        /** 比对名字前先归一化：去掉所有空格、转小写 */
-        fun normalizeName(name: String): String = name.replace(" ", "").lowercase()
     }
 }

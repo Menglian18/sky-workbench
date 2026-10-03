@@ -72,7 +72,7 @@ fun dateLabel(dateKey: String, todayKey: String): String = runCatching {
     }
 }.getOrElse { dateKey }
 
-/** 分可以选的档位：5 分钟一档 */
+/** 分可以选的档位：5 分钟一档（快捷用） */
 val MINUTE_STEPS: List<Int> = (0..11).map { it * 5 }
 
 /**
@@ -89,4 +89,13 @@ fun shiftMinute(minute: Int, forward: Boolean): Int = if (forward) {
     MINUTE_STEPS.firstOrNull { it > minute } ?: MINUTE_STEPS.first()
 } else {
     MINUTE_STEPS.lastOrNull { it < minute } ?: MINUTE_STEPS.last()
+}
+
+/**
+ * 分的加减：**一分钟一档**（1.2 改进第 3 条：时间要精确到几时几分）。
+ * 0 分往前是 59 分，59 分往后是 0 分。
+ */
+fun shiftMinuteExact(minute: Int, forward: Boolean): Int {
+    val safe = minute.coerceIn(0, 59)
+    return if (forward) (safe + 1) % 60 else (safe + 59) % 60
 }

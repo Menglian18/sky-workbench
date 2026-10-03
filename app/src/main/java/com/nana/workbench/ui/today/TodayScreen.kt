@@ -65,6 +65,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.graphics.graphicsLayer
@@ -77,6 +78,7 @@ import com.nana.workbench.today.TodoSchedule
 import com.nana.workbench.today.dateLabel
 import com.nana.workbench.today.shiftHour
 import com.nana.workbench.today.shiftMinute
+import com.nana.workbench.today.shiftMinuteExact
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
@@ -136,13 +138,6 @@ fun TodayScreen(
                 .padding(padding)
                 .fillMaxSize(),
         ) {
-            DateBar(
-                dateKey = dateKey,
-                onPrev = { viewModel.shiftDays(-1) },
-                onNext = { viewModel.shiftDays(1) },
-                onToday = viewModel::backToToday,
-                isToday = viewModel.isViewingToday(),
-            )
             HorizontalDivider()
 
             if (openItems.isEmpty() && doneItems.isEmpty()) {
@@ -251,39 +246,6 @@ fun TodayScreen(
     }
 }
 
-@Composable
-private fun DateBar(
-    dateKey: String,
-    onPrev: () -> Unit,
-    onNext: () -> Unit,
-    onToday: () -> Unit,
-    isToday: Boolean,
-) {
-    val date: LocalDate = DateKeys.parse(dateKey)
-    val weekdays = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
-    val label = "${date.monthValue}月${date.dayOfMonth}日 ${weekdays[date.dayOfWeek.value - 1]}"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onPrev) { Icon(Icons.Filled.KeyboardArrowLeft, "前一天") }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        if (!isToday) {
-            TextButton(onClick = onToday) { Text("回今天") }
-        }
-        IconButton(onClick = onNext) { Icon(Icons.Filled.KeyboardArrowRight, "后一天") }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TodoRow(
@@ -352,7 +314,8 @@ private fun TodoRow(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = if (draggable) "≡" else "🔒",
+                        // 1.2 改进第 6 条：被锁（已划掉）的任务前面不要带锁的图形
+                        text = if (draggable) "≡" else "",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -656,6 +619,13 @@ private fun ScheduleFields(
         if (showCalendar) {
             val state = rememberDatePickerState(
                 initialSelectedDateMillis = dateKeyToMillis(schedule.dateKey),
+                // 1.2 改进第 3 条：今天之前的日期变灰、选不了
+                selectableDates = object : SelectableDates {
+                    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                        val floor = dateKeyToMillis(todayKey) ?: return true
+                        return utcTimeMillis >= floor
+                    }
+                },
             )
             DatePicker(state = state, showModeToggle = false)
             Row(
@@ -691,8 +661,9 @@ private fun ScheduleFields(
                 Stepper(
                     label = "分",
                     value = minute,
-                    onPrev = { onScheduleChange(schedule.withTime(hour, shiftMinute(minute, false))) },
-                    onNext = { onScheduleChange(schedule.withTime(hour, shiftMinute(minute, true))) },
+                    // 1.2 改进第 3 条：精确到分（一分钟一档）
+                    onPrev = { onScheduleChange(schedule.withTime(hour, shiftMinuteExact(minute, false))) },
+                    onNext = { onScheduleChange(schedule.withTime(hour, shiftMinuteExact(minute, true))) },
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
