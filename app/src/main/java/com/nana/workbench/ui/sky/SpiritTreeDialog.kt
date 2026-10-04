@@ -78,19 +78,11 @@ fun SpiritTreeDialog(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "多半是名字对不上。下面手动挑一位，就能看到他的兑换树：",
+                        // 1.2.3 第 1 条：不要"所有先祖"的列表，只需要知道这次没查到就行
+                        text = "这位先祖的兑换树暂时没找到（多半是名字对不上）。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Column(
-                        modifier = Modifier
-                            .heightIn(max = 300.dp)
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        candidates.forEach { (_, label) ->
-                            TextButton(onClick = { onPick(label) }) { Text(label) }
-                        }
-                    }
                 } else {
                     Text(
                         text = tree.totalText() + " · 共 ${tree.nodes.size} 件",
