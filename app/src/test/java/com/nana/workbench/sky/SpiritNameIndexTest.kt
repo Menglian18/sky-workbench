@@ -100,4 +100,32 @@ class SpiritNameIndexTest {
         assertEquals(1, index.size)
         assertEquals("guid-1", SpiritNameIndex.find("放松日浴者", index))
     }
+    @Test
+    fun `同名不同括号的先祖要各归各的`() {
+        // 1.2.3 更新：这四位“远古…记忆”只靠括号区分
+        val index = SpiritNameIndex.buildNames(
+            mapOf(
+                "guid-a" to listOf("远古黑暗记忆（暗花）"),
+                "guid-b" to listOf("远古黑暗记忆（冥龙）"),
+            ),
+        )
+        assertEquals("guid-a", SpiritNameIndex.find("远古黑暗记忆（暗花）", index))
+        assertEquals("guid-b", SpiritNameIndex.find("远古黑暗记忆（冥龙）", index))
+    }
+
+    @Test
+    fun `括号写成半角也能对上`() {
+        val index = SpiritNameIndex.buildNames(mapOf("guid-a" to listOf("远古黑暗记忆（暗花）")))
+        assertEquals("guid-a", SpiritNameIndex.find("远古黑暗记忆(暗花)", index))
+    }
+
+    @Test
+    fun `wiki抳来的中文名能补上原本没中文名的先祖`() {
+        // 模拟：某先祖原本只有英文名，现在把 wiki 的官方中文名也加进同一个 guid
+        val index = SpiritNameIndex.buildNames(
+            mapOf("guid-x" to listOf("", "Boogie Kid", "踏舞孩童")),
+        )
+        assertEquals("guid-x", SpiritNameIndex.find("踏舞孩童", index))
+        assertEquals("guid-x", SpiritNameIndex.find("Boogie Kid", index))
+    }
 }

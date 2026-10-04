@@ -35,8 +35,30 @@ object SpiritNameIndex {
                 if (key.isNotEmpty()) index.putIfAbsent(key, guid)
             }
         }
+        // 括号里的内容也建一份，且**后建的不覆盖先建的**（同名不同括号的要各归各的）
+        namesByGuid.forEach { (guid, names) ->
+            names.forEach { name ->
+                val key = normalizeWithBrackets(name)
+                if (key.isNotEmpty()) index.putIfAbsent(key, guid)
+            }
+        }
         return index
     }
+
+    /**
+     * 归一化但**保留括号里的内容**（1.2.3 更新）。
+     *
+     * 有几位先祖的中文名只靠括号区分
+     * ——「远古黑暗记忆（暗花）」和「远古黑暗记忆（冥龙）」。
+     * 用会去掉括号的归一化，它们会撞成同一个名字，就分不出是谁了。
+     */
+    fun normalizeWithBrackets(raw: String): String = raw
+        .replace(Regex("[\\s　]+"), "")
+        .replace(Regex("[:：·、,，.。!！?？\"'\u201c\u201d\u2018\u2019\\-_—/]+"), "")
+        .replace("（", "(").replace("）", ")")
+        .replace("【", "(").replace("】", ")")
+        .lowercase()
+        .trim()
 
     /** 每位先祖只有一个名字时的简便写法 */
     fun build(names: Map<String, String>): Map<String, String> =
@@ -49,6 +71,9 @@ object SpiritNameIndex {
      *  3. 找不到就返回 null（界面会提示"没自动对上"）。
      */
     fun find(query: String, index: Map<String, String>): String? {
+        // 先按"保留括号"查（能区分同名不同括号的），再按去掉括号的查
+        val exactWithBrackets = normalizeWithBrackets(query)
+        if (exactWithBrackets.isNotEmpty()) index[exactWithBrackets]?.let { return it }
         val key = normalize(query)
         if (key.isEmpty()) return null
         index[key]?.let { return it }

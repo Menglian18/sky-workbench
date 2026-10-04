@@ -58,12 +58,30 @@ class CodexAssets(private val context: Context) {
             ExchangeTreeParser.parse(read("codex/trees.json")).associateBy { it.spiritId }
         }.getOrDefault(emptyMap())
         val parsed = runCatching { parseSpirits(read("codex/spirits.json")) }.getOrDefault(emptyMap())
-        val spiritNames = parsed.mapValues { (_, pair) -> pair.first.ifBlank { pair.second } }
-        // 中文名与英文名**都**建进索引：复刻数据里是中文名，图鉴里可能是英文名，两边都得能对上
-        // （1.2 第 1 条就是这里没建好，导致"看兑换树"点开什么也没有）
-        val index = SpiritNameIndex.buildNames(
-            parsed.mapValues { (_, pair) -> listOf(pair.first, pair.second) },
-        )
+
+        // 1.2.3 更新：把从 wiki 抓来的"旅行先祖官方中英名"并进来。
+        // 这批名字正好补上了原来对不上的那批（蟹语者、踏舞孩童、远古…记忆…）。
+        val pairs = runCatching { parseNamePairs(read("codex/spirit-name-pairs.json")) }
+            .getOrDefault(emptyMap())
+        val englishToGuid = parsed.entries
+            .filter { (_, pair) -> pair.second.isNotBlank() }
+            .associate { (guid, pair) -> SpiritNameIndex.normalizeWithBrackets(pair.second) to guid }
+
+        val namesByGuid = mutableMapOf<String, MutableList<String>>()
+        parsed.forEach { (guid, pair) ->
+            namesByGuid.getOrPut(guid) { mutableListOf() }.addAll(listOf(pair.first, pair.second))
+        }
+        pairs.forEach { (english, chinese) ->
+            val guid = englishToGuid[SpiritNameIndex.normalizeWithBrackets(english)] ?: return@forEach
+            namesByGuid.getOrPut(guid) { mutableListOf() }.add(chinese)
+        }
+
+        // 显示名：优先中文（原本没有中文名的，现在能借 wiki 的官方中文名补上）
+        val spiritNames = namesByGuid.mapValues { (_, names) ->
+            names.firstOrNull { name -> name.any { it in '\u4e00'..'\u9fff' } }
+                ?: names.firstOrNull().orEmpty()
+        }
+        val index = SpiritNameIndex.buildNames(namesByGuid)
         val images = runCatching { parseSpiritImages(read("codex/spirits.json")) }
             .getOrDefault(emptyMap())
         CodexData(
@@ -73,6 +91,17 @@ class CodexAssets(private val context: Context) {
             spiritIdByName = index,
             spiritImages = images,
         )
+    }
+
+    /** 旅行先祖的中英对照：{"English Name": "中文名"}（1.2.3 更新，从 BWIKI 抓的） */
+    private fun parseNamePairs(text: String): Map<String, String> {
+        val obj = runCatching { JSONObject(text) }.getOrNull() ?: return emptyMap()
+        val result = mutableMapOf<String, String>()
+        obj.keys().forEach { key ->
+            val value = obj.optString(key)
+            if (key.isNotBlank() && value.isNotBlank()) result[key] = value
+        }
+        return result
     }
 
     /** 先祖：guid → 照片网址（1.2.2 第 3 条） */
