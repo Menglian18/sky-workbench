@@ -111,6 +111,27 @@ GLOSSARY = {
     "grandparent": "祖辈", "indifferent": "冷淡", "so": "如此",
     "confetti": "彩纸", "anxious": "焦虑", "waving hand": "招手",
     "crying baby": "哭泣", "duet dance": "双人舞",
+    # 第三轮补充（表情名为主）
+    "champion": "冠军", "telekinesis": "念力", "scholar": "学者",
+    "pray": "祈祷", "calm": "平静", "ouch": "哎哟", "evil": "斜恶",
+    "facepalm": "扶额", "scold": "责备", "eww": "嫌弃",
+    "chuckle": "轻笑", "silent": "安静", "conduct": "指挥",
+    "skipping": "跳跃", "raise": "举起", "roof": "屋顶",
+    "twirl": "旋转", "rhythmic": "律动", "don": "穿上",
+    "go": "走", "surprised": "惊讶", "show": "展示", "peek": "偷看",
+    "trick": "戏法", "boo": "嘘", "doze": "打盹", "navigate": "导航",
+    "voil": "看", "yoga": "瑜伽", "admire": "欣赏", "actor": "演员",
+    "juggler": "杂耍", "troupe": "剧团", "greeter": "迎宾",
+    "apologetic": "抱歉", "fainting": "晕倒", "shivering": "发抖",
+    "hiding": "躲藏", "seeking": "寻找", "respectful": "恭敬",
+    "thoughtful": "沉思", "upset": "难过", "disappointed": "失望",
+    "hmph": "哼", "flex": "伸展", "squat": "深蹲", "giggle": "咯咯笑",
+    "giggling": "咯咯笑", "giggle fit": "咯咯笑",
+    "headbob": "点头", "handshake": "握手", "high five": "击掌",
+    "blow kiss": "飞吻", "wave hello": "招手", "sneeze": "打喷嚏",
+    "nod yes": "点头", "shake head": "摇头", "thumbs up": "点赞",
+    "clap hands": "鼓掌", "cry loudly": "大哭", "sit down": "坐下",
+    "stand up": "站起", "look around": "四处张望",
 }
 
 DROP_WORDS = {
