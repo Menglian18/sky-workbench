@@ -29,8 +29,8 @@ import urllib.request
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SkyGame-Data 解包后的位置。默认取项目旁边的 _toolchain 目录，也可以用环境变量指定：
-#   set NANA_TOOLCHAIN=D:\somewhere\_toolchain
-TC = os.environ.get('NANA_TOOLCHAIN') or os.path.abspath(os.path.join(PROJECT, '..', '..', '_toolchain'))
+#   set SKY_TOOLCHAIN=D:\somewhere\_toolchain
+TC = os.environ.get('SKY_TOOLCHAIN') or os.path.abspath(os.path.join(PROJECT, '..', '..', '_toolchain'))
 SKYGAME_ASSETS = os.path.join(TC, 'skygame-data', 'package', 'assets')
 OUT_ASSETS = os.path.join(PROJECT, 'app', 'src', 'main', 'assets', 'codex')
 OUT_ZH = os.path.join(PROJECT, 'data', 'zh-names')
@@ -77,7 +77,7 @@ def bwiki(params, attempts=4):
     for attempt in range(1, attempts + 1):
         try:
             request = urllib.request.Request(
-                url, headers={'User-Agent': 'Mozilla/5.0 (nana-workbench build script)'})
+                url, headers={'User-Agent': 'Mozilla/5.0 (sky-workbench build script)'})
             with urllib.request.urlopen(request, timeout=60) as response:
                 return json.loads(response.read().decode('utf-8'))
         except Exception as error:  # noqa: BLE001 - 构建脚本，失败就重试

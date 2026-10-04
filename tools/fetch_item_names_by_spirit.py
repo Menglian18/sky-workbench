@@ -26,7 +26,7 @@ import urllib.parse
 import urllib.request
 
 API = "https://wiki.biligame.com/sky/api.php"
-UA = {"User-Agent": "nana-workbench-personal/1.0 (personal offline helper)"}
+UA = {"User-Agent": "sky-workbench-personal/1.0 (personal offline helper)"}
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CODEX = os.path.join(PROJECT, "app", "src", "main", "assets", "codex")
 OUT = os.path.join(CODEX, "item-name-official.json")

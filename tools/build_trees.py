@@ -27,7 +27,7 @@ import os
 import sys
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TC = os.environ.get('NANA_TOOLCHAIN') or os.path.abspath(os.path.join(PROJECT, '..', '..', '_toolchain'))
+TC = os.environ.get('SKY_TOOLCHAIN') or os.path.abspath(os.path.join(PROJECT, '..', '..', '_toolchain'))
 ASSETS = os.path.join(TC, 'skygame-data', 'package', 'assets')
 OUT = os.path.join(PROJECT, 'app', 'src', 'main', 'assets', 'codex', 'trees.json')
 CODEX_ITEMS = os.path.join(PROJECT, 'app', 'src', 'main', 'assets', 'codex', 'items.json')

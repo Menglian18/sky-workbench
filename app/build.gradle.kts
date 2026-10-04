@@ -19,15 +19,15 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.nana.workbench"
+    namespace = "io.github.menglian18.skyworkbench"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.nana.workbench"
+        applicationId = "io.github.menglian18.skyworkbench"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.2.5"
+        versionCode = 10
+        versionName = "1.2.6"
         vectorDrawables { useSupportLibrary = true }
     }
 

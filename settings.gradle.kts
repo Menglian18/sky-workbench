@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "nana-workbench"
+rootProject.name = "sky-workbench"
 include(":app")

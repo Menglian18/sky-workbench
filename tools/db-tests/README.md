@@ -1,6 +1,6 @@
 # 数据库层测试（默认不在电脑上的单元测试里跑）
 
-`NanaDatabaseTest.kt` 用 Room 的**真实 SQLite** 验证数据库层，覆盖验收清单里的几条关键承诺：
+`SkyDatabaseTest.kt` 用 Room 的**真实 SQLite** 验证数据库层，覆盖验收清单里的几条关键承诺：
 
 | 覆盖 | 验收项 |
 |---|---|
@@ -28,7 +28,7 @@
 1. 复制回测试源码目录：
 
    ```
-   copy tools/db-tests/NanaDatabaseTest.kt app/src/test/java/com/nana/workbench/data/db/
+   copy tools/db-tests/SkyDatabaseTest.kt app/src/test/java/io/github/menglian18/skyworkbench/data/db/
    ```
 
 2. 在 `app/build.gradle.kts` 里加上这两个测试依赖：

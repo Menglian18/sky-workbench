@@ -1,4 +1,6 @@
-# 娜娜工作台
+# 光遇工作台
+
+开源仓库：<https://github.com/Menglian18/sky-workbench>
 
 一个装在安卓手机上的个人生活 App：**不用登录、断网也能用、数据只存在手机本地**。
 
