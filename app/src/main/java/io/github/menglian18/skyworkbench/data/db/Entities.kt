@@ -215,7 +215,21 @@ data class SkySeasonEntity(
     val manuallyEdited: Boolean = false,
 )
 
-// ── 12. 全局状态（上次抓取时间、上次导出时间、上次清理时间等） ────────────────
+// ── 12. 光遇节日活动（抓来的，可整块清空） ───────────────────────────────────
+
+@Entity(tableName = "sky_event")
+data class SkyEventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** WIKI 上的活动页名，例如「2026年秋宵节」 */
+    val name: String,
+    val startDate: String,
+    /** 空串 = 官方还没公布结束时间（WIKI 上写的是占位值，见 SeasonParser） */
+    val endDate: String,
+    val fetchedAt: Long,
+    val manuallyEdited: Boolean = false,
+)
+
+// ── 13. 全局状态（上次抓取时间、上次导出时间、上次清理时间等） ────────────────
 
 @Entity(tableName = "app_state")
 data class AppStateEntity(

@@ -86,19 +86,71 @@ fun SkyScreen(
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("复刻季节") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("图鉴") })
-            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("账号") })
-            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("小工具") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("活动") })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("账号") })
+            Tab(selected = tab == 4, onClick = { tab = 4 }, text = { Text("小工具") })
         }
         when (tab) {
             0 -> TravelingSection(viewModel)
             1 -> CodexGridScreen()
-            2 -> AccountSection(viewModel)
+            2 -> EventListScreen(viewModel = viewModel)
+            3 -> AccountSection(viewModel)
             else -> ToolsSection()
         }
     }
 }
 
-private fun formatTime(millis: Long?): String {
+/**
+ * 集体复刻里的一位先祖（1.3.0）。
+ *
+ * 一次集体复刻是**好几位**先祖同时回归，所以每位都要有自己的照片和兑换树入口，
+ * 只显示其中一位会让人以为"只来了一位"。
+ * 名字在图鉴数据里对不上时，照样显示名字，只是点开兑换树会看到"查不到这位的树"。
+ */
+@Composable
+private fun CollectiveSpiritRow(
+    name: String,
+    photoUrl: String,
+    detail: String,
+    onOpenTree: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (photoUrl.isNotBlank()) {
+            RemoteImage(
+                url = photoUrl,
+                contentDescription = name,
+                imageSize = 56.dp,
+            )
+        } else {
+            Box(modifier = Modifier.size(56.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            if (detail.isNotBlank()) {
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        TextButton(onClick = onOpenTree) {
+            Text("兑换树 →")
+        }
+    }
+}
+
+internal fun formatTime(millis: Long?): String {
     if (millis == null) return "还没更新过"
     val format = SimpleDateFormat("M月d日 HH:mm", Locale.CHINA)
     return format.format(Date(millis))
@@ -129,7 +181,6 @@ private fun TravelingSection(
 ) {
     var treeSpiritName by remember { mutableStateOf<String?>(null) }
     val treeCount by codex.treeCount.collectAsState()
-    val spirits by viewModel.travelingSpirits.collectAsState()
     val countdown by viewModel.countdown.collectAsState()
     val season by viewModel.currentSeason.collectAsState()
     val status by viewModel.fetchStatus.collectAsState()
@@ -209,42 +260,44 @@ private fun TravelingSection(
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                         if (countdown.ongoingIsCollective) {
-                            Text(
-                                text = spirits
-                                    .filter { it.startDate == ongoing.startDate }
-                                    .joinToString("、") { it.spiritName },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                        }
-                        Text(
-                            text = "还剩 ${SkyCountdown.daysLeft(ongoing.endDate, todayKey)} 天",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        // 1.2.2 第 3 条：复刻先祖旁边放一张这位先祖的照片（联网取，不打包）
-                        codex.imageForName(ongoing.spiritName).takeIf { it.isNotBlank() }?.let { photo ->
-                            RemoteImage(
-                                url = photo,
-                                contentDescription = ongoing.spiritName,
-                                imageSize = 88.dp,
-                            )
-                        }
-                        TextButton(onClick = { treeSpiritName = ongoing.spiritName }) {
-                            Text("看兑换树 →")
+                            // 1.3.0：集体复刻是**好几位**先祖，一位一位给照片和兑换树入口。
+                            // 以前只画被挑中的那一位，其余几位只能看到名字。
+                            countdown.ongoingList.forEach { spirit ->
+                                CollectiveSpiritRow(
+                                    name = spirit.spiritName,
+                                    photoUrl = codex.imageForName(spirit.spiritName),
+                                    detail = listOf(spirit.type, spirit.items)
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" · "),
+                                    onOpenTree = { treeSpiritName = spirit.spiritName },
+                                )
+                            }
+                        } else {
+                            // 单人复刻保持原来的样子：大一点的图 + 一个兑换树入口
+                            // 1.2.2 第 3 条：复刻先祖旁边放一张这位先祖的照片（联网取，不打包）
+                            codex.imageForName(ongoing.spiritName).takeIf { it.isNotBlank() }?.let { photo ->
+                                RemoteImage(
+                                    url = photo,
+                                    contentDescription = ongoing.spiritName,
+                                    imageSize = 88.dp,
+                                )
+                            }
+                            TextButton(onClick = { treeSpiritName = ongoing.spiritName }) {
+                                Text("看兑换树 →")
+                            }
+                            if (ongoing.items.isNotBlank()) {
+                                Text(
+                                    text = "可换：${ongoing.items}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                )
+                            }
                         }
                         Text(
                             text = "${ongoing.startDate} ～ ${ongoing.endDate} · ${ongoing.type}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (ongoing.items.isNotBlank()) {
-                            Text(
-                                text = "可换：${ongoing.items}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                        }
                     }
                     next != null -> {
                         Text("下次复刻", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
@@ -257,22 +310,27 @@ private fun TravelingSection(
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onBackground,
                         )
-                        if (countdown.nextIsCollective) {
-                            Text(
-                                text = spirits
-                                    .filter { it.startDate == next.startDate }
-                                    .joinToString("、") { it.spiritName },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                            )
-                        }
                         Text(
                             text = "还有 ${SkyCountdown.daysLeft(next.startDate, todayKey)} 天",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
-                        TextButton(onClick = { treeSpiritName = next.spiritName }) {
-                            Text("看兑换树 →")
+                        if (countdown.nextIsCollective) {
+                            // 1.3.0：下一次是集体复刻时，也把每位先祖列出来（有些批次官方已经公布名单了）
+                            countdown.nextList.forEach { spirit ->
+                                CollectiveSpiritRow(
+                                    name = spirit.spiritName,
+                                    photoUrl = codex.imageForName(spirit.spiritName),
+                                    detail = listOf(spirit.type, spirit.items)
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" · "),
+                                    onOpenTree = { treeSpiritName = spirit.spiritName },
+                                )
+                            }
+                        } else {
+                            TextButton(onClick = { treeSpiritName = next.spiritName }) {
+                                Text("看兑换树 →")
+                            }
                         }
                     }
                     else -> Text(
@@ -291,8 +349,16 @@ private fun TravelingSection(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text("当季", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
-                if (season == null) {
+                // 1.3.0：季节要分清"进行中 / 还没开始 / 结束时间官方还没公布"。
+                // 以前只看"结束日 ≥ 今天"，于是把还没开始的下个季节当成当季，
+                // 再配上 WIKI 的占位结束日（2099-12-31），显示成"还剩 3 万多天"。
+                val seasonState = SkyCountdown.seasonStatus(season, todayKey)
+                Text(
+                    text = if (seasonState.notStarted) "下个季节" else "当季",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                if (seasonState.season == null) {
                     Text(
                         text = "还没获取到季节信息 →",
                         style = MaterialTheme.typography.bodyMedium,
@@ -300,12 +366,21 @@ private fun TravelingSection(
                     )
                 } else {
                     Text(
-                        text = "${season!!.name} · 还剩 ${SkyCountdown.daysLeft(season!!.endDate, todayKey)} 天",
+                        text = buildString {
+                            append(seasonState.season.name)
+                            when {
+                                seasonState.notStarted ->
+                                    append(" · 还有 ").append(seasonState.daysUntilStart).append(" 天开始")
+                                seasonState.daysLeft != null ->
+                                    append(" · 还剩 ").append(seasonState.daysLeft).append(" 天")
+                                else -> append(" · 结束时间官方未公布")
+                            }
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        text = "${season!!.startDate} ～ ${season!!.endDate}",
+                        text = seasonState.season.startDate + " ～ " + seasonState.endLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

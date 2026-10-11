@@ -1,5 +1,6 @@
 package io.github.menglian18.skyworkbench.sky
 
+import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
 import org.junit.Assert.assertEquals
@@ -108,5 +109,33 @@ class SkyCleanupTest {
     fun `空清单不报错`() {
         assertEquals(0, SkyCleanup.expiredSpirits(emptyList(), today).size)
         assertEquals(0, SkyCleanup.expiredSeasons(emptyList(), today).size)
+    }
+
+
+    // ── 1.3.0：活动也走同一套清理规则 ──────────────────────────────────────────
+
+    private fun event(id: Long, endDate: String, manuallyEdited: Boolean = false) = SkyEventEntity(
+        id = id,
+        name = "活动$id",
+        startDate = "2026-01-01",
+        endDate = endDate,
+        fetchedAt = 1L,
+        manuallyEdited = manuallyEdited,
+    )
+
+    @Test
+    fun `活动用同一套规则`() {
+        val events = listOf(
+            event(1, "2026-10-30"),
+            event(2, "2026-01-01"),
+            event(3, "2025-01-01", manuallyEdited = true),
+            event(4, ""),
+        )
+        assertEquals(listOf(2L), SkyCleanup.expiredEvents(events, today).map { it.id })
+    }
+
+    @Test
+    fun `结束时间未公布的活动不会被清掉`() {
+        assertEquals(0, SkyCleanup.expiredEvents(listOf(event(1, "")), today).size)
     }
 }

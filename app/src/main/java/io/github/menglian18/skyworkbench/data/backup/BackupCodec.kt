@@ -1,6 +1,7 @@
 package io.github.menglian18.skyworkbench.data.backup
 
 import io.github.menglian18.skyworkbench.data.db.AppStateEntity
+import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import io.github.menglian18.skyworkbench.data.db.MemoEntity
 import io.github.menglian18.skyworkbench.data.db.NumberRecordEntity
 import io.github.menglian18.skyworkbench.data.db.NumberTableEntity
@@ -30,6 +31,7 @@ data class BackupSnapshot(
     val skyHolding: SkyHoldingEntity? = null,
     val skySpirits: List<SkyTravelingSpiritEntity> = emptyList(),
     val skySeasons: List<SkySeasonEntity> = emptyList(),
+    val skyEvents: List<SkyEventEntity> = emptyList(),
     val appState: List<AppStateEntity> = emptyList(),
 ) {
     /** 导入完成后给用户看的条目摘要（数字能一眼核对）。 */
@@ -44,6 +46,7 @@ data class BackupSnapshot(
         skyWishes = skyWishes.size,
         skySpirits = skySpirits.size,
         skySeasons = skySeasons.size,
+        skyEvents = skyEvents.size,
     )
 }
 
@@ -58,6 +61,7 @@ data class BackupSummary(
     val skyWishes: Int,
     val skySpirits: Int,
     val skySeasons: Int,
+    val skyEvents: Int,
 ) {
     fun describe(): String = buildString {
         append("计划 ").append(todos).append(" 条、")
@@ -67,7 +71,8 @@ data class BackupSummary(
         append("光遇账号 ").append(skyAccounts).append(" 个、")
         append("心愿 ").append(skyWishes).append(" 条、")
         append("复刻 ").append(skySpirits).append(" 条、")
-        append("季节 ").append(skySeasons).append(" 条")
+        append("季节 ").append(skySeasons).append(" 条、")
+        append("活动 ").append(skyEvents).append(" 个")
     }
 }
 
@@ -96,6 +101,7 @@ object BackupCodec {
         snapshot.skyHolding?.let { root.put("skyHolding", holdingToJson(it)) }
         root.put("skySpirits", encodeList(snapshot.skySpirits, ::spiritToJson))
         root.put("skySeasons", encodeList(snapshot.skySeasons, ::seasonToJson))
+        root.put("skyEvents", encodeList(snapshot.skyEvents, ::eventToJson))
         root.put("appState", encodeList(snapshot.appState, ::stateToJson))
         return root.toString()
     }
@@ -118,6 +124,7 @@ object BackupCodec {
                 skyHolding = root.optJSONObject("skyHolding")?.let { holdingFromJson(it) },
                 skySpirits = decodeList(root.optJSONArray("skySpirits")) { spiritFromJson(it) },
                 skySeasons = decodeList(root.optJSONArray("skySeasons")) { seasonFromJson(it) },
+                skyEvents = decodeList(root.optJSONArray("skyEvents")) { eventFromJson(it) },
                 appState = decodeList(root.optJSONArray("appState")) { stateFromJson(it) },
             )
         }.getOrNull()
@@ -336,6 +343,21 @@ object BackupCodec {
     }
 
     private fun seasonFromJson(obj: JSONObject) = SkySeasonEntity(
+        id = obj.optLong("id"),
+        name = obj.optString("name"),
+        startDate = obj.optString("startDate"),
+        endDate = obj.optString("endDate"),
+        fetchedAt = obj.optLong("fetchedAt"),
+        manuallyEdited = obj.optBoolean("manuallyEdited"),
+    )
+
+    private fun eventToJson(item: SkyEventEntity) = JSONObject().apply {
+        put("id", item.id); put("name", item.name); put("startDate", item.startDate)
+        put("endDate", item.endDate); put("fetchedAt", item.fetchedAt)
+        put("manuallyEdited", item.manuallyEdited)
+    }
+
+    private fun eventFromJson(obj: JSONObject) = SkyEventEntity(
         id = obj.optLong("id"),
         name = obj.optString("name"),
         startDate = obj.optString("startDate"),

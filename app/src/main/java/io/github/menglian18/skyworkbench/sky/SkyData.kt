@@ -151,6 +151,17 @@ class SkyFetchClient(private val userAgent: String = "sky-workbench/1.0") {
             "query" to "[[分类:奇妙之旅]]|?开启时间|?结束时间|limit=200",
         ))
 
+    /**
+     * 节日活动列表（1.3.0 新增）。WIKI 上「分类:节日活动」有 60 多个活动页，
+     * 每个都带「开启时间 / 结束时间」，所以能自动抓，不用手填。
+     */
+    fun fetchEventsJson(): String =
+        request(mapOf(
+            "action" to "ask",
+            "format" to "json",
+            "query" to "[[分类:节日活动]]|?开启时间|?结束时间|limit=200",
+        ))
+
     private fun request(params: Map<String, String>, attempts: Int = 3): String {
         val query = params.entries.joinToString("&") { (key, value) ->
             URLEncoder.encode(key, "UTF-8") + "=" + URLEncoder.encode(value, "UTF-8")

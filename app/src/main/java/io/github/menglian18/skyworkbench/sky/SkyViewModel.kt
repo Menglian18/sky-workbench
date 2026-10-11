@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.menglian18.skyworkbench.App
 import io.github.menglian18.skyworkbench.data.db.SkyAccountEntity
 import io.github.menglian18.skyworkbench.data.db.SkyHoldingEntity
+import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
 import io.github.menglian18.skyworkbench.data.db.SkyWishEntity
@@ -85,6 +86,10 @@ class SkyViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val seasons: StateFlow<List<SkySeasonEntity>> = dao.watchSeasons()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** 节日活动（1.3.0 新增，抓 WIKI 的「分类:节日活动」） */
+    val events: StateFlow<List<SkyEventEntity>> = dao.watchEvents()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val countdown: StateFlow<SkyCountdownPicks> =
@@ -183,10 +188,12 @@ class SkyViewModel(application: Application) : AndroidViewModel(application) {
                 val result = withContext(Dispatchers.IO) {
                     val spiritText = client.fetchTravelingSpiritWikitext()
                     val seasonJson = runCatching { client.fetchSeasonsJson() }.getOrDefault("")
-                    spiritText to seasonJson
+                    val eventJson = runCatching { client.fetchEventsJson() }.getOrDefault("")
+                    Triple(spiritText, seasonJson, eventJson)
                 }
                 val spirits = TravelingSpiritParser.parse(result.first, fetchedAt)
                 val seasons = if (result.second.isBlank()) emptyList() else SeasonParser.parse(result.second, fetchedAt)
+                val events = if (result.third.isBlank()) emptyList() else SkyEventParser.parse(result.third, fetchedAt)
 
                 if (spirits.isEmpty()) {
                     _fetchStatus.value = SkyFetchStatus(
@@ -205,13 +212,21 @@ class SkyViewModel(application: Application) : AndroidViewModel(application) {
                     dao.deleteFetchedSeasons()
                     dao.insertSeasons(seasons)
                 }
+                if (events.isNotEmpty()) {
+                    dao.deleteFetchedEvents()
+                    dao.insertEvents(events)
+                }
                 stateDao.put(io.github.menglian18.skyworkbench.data.db.AppStateEntity(KEY_LAST_FETCH, fetchedAt.toString()))
 
                 _fetchStatus.value = SkyFetchStatus(
                     loading = false,
                     lastFetchedAt = fetchedAt,
                     failed = false,
-                    message = "已更新：复刻 ${spirits.size} 条" + if (seasons.isNotEmpty()) "、季节 ${seasons.size} 条" else "",
+                    message = buildString {
+                        append("已更新：复刻 ").append(spirits.size).append(" 条")
+                        if (seasons.isNotEmpty()) append("、季节 ").append(seasons.size).append(" 条")
+                        if (events.isNotEmpty()) append("、活动 ").append(events.size).append(" 条")
+                    },
                 )
             } catch (error: Exception) {
                 _fetchStatus.value = SkyFetchStatus(

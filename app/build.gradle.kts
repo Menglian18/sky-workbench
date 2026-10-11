@@ -26,8 +26,8 @@ android {
         applicationId = "io.github.menglian18.skyworkbench"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10
-        versionName = "1.2.6"
+        versionCode = 11
+        versionName = "1.3.0"
         vectorDrawables { useSupportLibrary = true }
     }
 

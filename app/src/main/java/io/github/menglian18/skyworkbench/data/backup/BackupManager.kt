@@ -17,10 +17,10 @@ data class DataUsage(val databaseBytes: Long, val cacheBytes: Long) {
 }
 
 /** 一键清理之前先告诉用户"能清出多少"。 */
-data class CleanPreview(val cacheBytes: Long, val spirits: Int, val seasons: Int)
+data class CleanPreview(val cacheBytes: Long, val spirits: Int, val seasons: Int, val events: Int)
 
 /** 清理结果。 */
-data class CleanResult(val freedBytes: Long, val spirits: Int, val seasons: Int)
+data class CleanResult(val freedBytes: Long, val spirits: Int, val seasons: Int, val events: Int)
 
 /** 导入的结果：恢复进来的内容 + 导入前自动保留下来的那份。 */
 data class ImportResult(val restored: BackupSummary, val safety: BackupSummary?)
@@ -109,6 +109,7 @@ class BackupManager(private val context: Context) {
             skyHolding = database.skyDao().findHolding(),
             skySpirits = database.skyDao().listTravelingSpirits(),
             skySeasons = database.skyDao().listSeasons(),
+            skyEvents = database.skyDao().listEvents(),
             appState = listOfNotNull(
                 database.appStateDao().get(KEY_LAST_EXPORT)?.let { AppStateEntity(KEY_LAST_EXPORT, it) },
             ),
@@ -129,6 +130,7 @@ class BackupManager(private val context: Context) {
         snapshot.skyHolding?.let { database.skyDao().saveHolding(it) }
         database.skyDao().insertTravelingSpirits(snapshot.skySpirits)
         database.skyDao().insertSeasons(snapshot.skySeasons)
+        database.skyDao().insertEvents(snapshot.skyEvents)
         snapshot.summary()
     }
 
@@ -141,6 +143,7 @@ class BackupManager(private val context: Context) {
             cacheBytes = cacheSize(),
             spirits = SkyCleanup.expiredSpirits(database.skyDao().listTravelingSpirits(), today).size,
             seasons = SkyCleanup.expiredSeasons(database.skyDao().listSeasons(), today).size,
+            events = SkyCleanup.expiredEvents(database.skyDao().listEvents(), today).size,
         )
     }
 
@@ -160,11 +163,15 @@ class BackupManager(private val context: Context) {
         val today = DateKeys.todayKey()
         val expiredSpirits = SkyCleanup.expiredSpirits(dao.listTravelingSpirits(), today)
         val expiredSeasons = SkyCleanup.expiredSeasons(dao.listSeasons(), today)
+        val expiredEvents = SkyCleanup.expiredEvents(dao.listEvents(), today)
         if (expiredSpirits.isNotEmpty()) {
             dao.deleteTravelingSpiritsByIds(expiredSpirits.map { it.id })
         }
         if (expiredSeasons.isNotEmpty()) {
             dao.deleteSeasonsByIds(expiredSeasons.map { it.id })
+        }
+        if (expiredEvents.isNotEmpty()) {
+            dao.deleteEventsByIds(expiredEvents.map { it.id })
         }
 
         database.appStateDao().put(
@@ -174,6 +181,7 @@ class BackupManager(private val context: Context) {
             freedBytes = (before - cacheSize()).coerceAtLeast(0L),
             spirits = expiredSpirits.size,
             seasons = expiredSeasons.size,
+            events = expiredEvents.size,
         )
     }
 

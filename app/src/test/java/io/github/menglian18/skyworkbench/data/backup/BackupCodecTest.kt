@@ -2,6 +2,7 @@ package io.github.menglian18.skyworkbench.data.backup
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 import io.github.menglian18.skyworkbench.data.db.AppStateEntity
@@ -9,6 +10,7 @@ import io.github.menglian18.skyworkbench.data.db.MemoEntity
 import io.github.menglian18.skyworkbench.data.db.NumberRecordEntity
 import io.github.menglian18.skyworkbench.data.db.NumberTableEntity
 import io.github.menglian18.skyworkbench.data.db.SkyAccountEntity
+import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import io.github.menglian18.skyworkbench.data.db.SkyHoldingEntity
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
@@ -172,5 +174,39 @@ class BackupCodecTest {
         )
         val restored = BackupCodec.decode(BackupCodec.encode(snapshot))!!
         assertEquals("第一行\n第二行\t带制表符", restored.memos[0].content)
+    }
+
+
+    @Test
+    fun `活动也会一起导出再导入`() {
+        val snapshot = BackupSnapshot(
+            exportedAt = 1L,
+            skyEvents = listOf(
+                SkyEventEntity(
+                    id = 7,
+                    name = "2026年秋宵节",
+                    startDate = "2026-09-24",
+                    endDate = "2026-10-14",
+                    fetchedAt = 5L,
+                ),
+                SkyEventEntity(
+                    id = 8,
+                    name = "还没公布结束时间的活动",
+                    startDate = "2026-11-01",
+                    endDate = "",
+                    fetchedAt = 5L,
+                ),
+            ),
+        )
+        val restored = BackupCodec.decode(BackupCodec.encode(snapshot))!!
+        assertEquals(2, restored.skyEvents.size)
+        assertEquals("2026年秋宵节", restored.skyEvents[0].name)
+        assertEquals("2026-10-14", restored.skyEvents[0].endDate)
+        assertEquals("", restored.skyEvents[1].endDate)
+        assertEquals(2, restored.summary().skyEvents)
+        assertTrue(
+            "导入后的摘要要提到活动",
+            restored.summary().describe().contains("活动 2 个"),
+        )
     }
 }

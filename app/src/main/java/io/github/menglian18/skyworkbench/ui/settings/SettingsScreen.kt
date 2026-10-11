@@ -274,7 +274,7 @@ fun SettingsScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("可以清出约 ${formatSize(preview.cacheBytes)}。")
-                    Text("还会清掉早就过期的复刻 ${preview.spirits} 条、季节 ${preview.seasons} 条。**正在复刻的不会动**，需要时重新联网获取即可。")
+                    Text("还会清掉早就过期的复刻 ${preview.spirits} 条、季节 ${preview.seasons} 条、活动 ${preview.events} 个。正在进行的不会动，需要时重新联网获取即可。")
                     Text(
                         text = "你自己记的计划、学习卡、备忘、数字表格一条都不会动。",
                         style = MaterialTheme.typography.bodySmall,

@@ -20,9 +20,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SkyHoldingEntity::class,
         SkyTravelingSpiritEntity::class,
         SkySeasonEntity::class,
+        SkyEventEntity::class,
         AppStateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class SkyDatabase : RoomDatabase() {
@@ -79,6 +80,24 @@ abstract class SkyDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * 4 → 5：新增"节日活动"表（1.3.0 · 活动查看）。
+         * 只**建一张新表**，不动任何已有表，所以老数据一条不丢。
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sky_event` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`startDate` TEXT NOT NULL, " +
+                        "`endDate` TEXT NOT NULL, " +
+                        "`fetchedAt` INTEGER NOT NULL, " +
+                        "`manuallyEdited` INTEGER NOT NULL)",
+                )
+            }
+        }
+
         @Volatile
         private var instance: SkyDatabase? = null
 
@@ -88,7 +107,8 @@ abstract class SkyDatabase : RoomDatabase() {
                     context.applicationContext,
                     SkyDatabase::class.java,
                     DB_NAME,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .build().also { instance = it }
             }
     }
 }

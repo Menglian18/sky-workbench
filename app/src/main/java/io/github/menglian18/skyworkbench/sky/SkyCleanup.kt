@@ -1,5 +1,6 @@
 package io.github.menglian18.skyworkbench.sky
 
+import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
 import io.github.menglian18.skyworkbench.util.DateKeys
@@ -43,5 +44,18 @@ object SkyCleanup {
         todayKey: String,
         keepDays: Long = KEEP_DAYS,
     ): List<SkySeasonEntity> =
+        items.filter { !it.manuallyEdited && isExpired(it.endDate, todayKey, keepDays) }
+
+    /**
+     * 该清掉的活动（1.3.0）。
+     *
+     * 和季节一样：刚结束的还会留 [KEEP_DAYS] 天（方便回头看），
+     * 结束时间未公布的（空串）读不懂 → [isExpired] 返回 false → 一律保留。
+     */
+    fun expiredEvents(
+        items: List<SkyEventEntity>,
+        todayKey: String,
+        keepDays: Long = KEEP_DAYS,
+    ): List<SkyEventEntity> =
         items.filter { !it.manuallyEdited && isExpired(it.endDate, todayKey, keepDays) }
 }

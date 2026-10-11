@@ -407,6 +407,25 @@ interface SkyDao {
 
     @Query("DELETE FROM sky_season")
     suspend fun deleteAllSeasons()
+
+    // 节日活动（抓来的，1.3.0 新增"活动查看"）
+    @Query("SELECT * FROM sky_event ORDER BY startDate DESC")
+    fun watchEvents(): Flow<List<SkyEventEntity>>
+
+    @Query("SELECT * FROM sky_event ORDER BY startDate DESC")
+    suspend fun listEvents(): List<SkyEventEntity>
+
+    @Insert
+    suspend fun insertEvents(items: List<SkyEventEntity>)
+
+    @Query("DELETE FROM sky_event WHERE manuallyEdited = 0")
+    suspend fun deleteFetchedEvents()
+
+    @Query("DELETE FROM sky_event")
+    suspend fun deleteAllEvents()
+
+    @Query("DELETE FROM sky_event WHERE id IN (:ids)")
+    suspend fun deleteEventsByIds(ids: List<Long>)
 }
 
 @Dao

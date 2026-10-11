@@ -3,6 +3,7 @@ package io.github.menglian18.skyworkbench.sky
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -167,5 +168,125 @@ class SkyCountdownTest {
         )
         assertNull(SkyCountdown.currentSeason(seasons, today))
         assertNull(SkyCountdown.seasonDaysLeft(null, today))
+    }
+
+
+    // ── 1.3.0：集体复刻要每位先祖各自的照片与兑换树 ──────────────────────────────
+
+    @Test
+    fun `集体复刻会带出同期全部先祖_供界面一位一位显示`() {
+        val batch = listOf(
+            spirit("采药人", "2026-09-24", "2026-10-14", id = 1),
+            spirit("猎手", "2026-09-24", "2026-10-14", id = 2),
+            spirit("公主", "2026-09-24", "2026-10-14", id = 3),
+            spirit("领主", "2026-09-24", "2026-10-14", id = 4),
+        )
+        val picks = SkyCountdown.pick(batch, today)
+        assertEquals(4, picks.ongoingList.size)
+        assertEquals(
+            setOf("采药人", "猎手", "公主", "领主"),
+            picks.ongoingList.map { it.spiritName }.toSet(),
+        )
+    }
+
+    @Test
+    fun `单人复刻时列表里只有他自己`() {
+        val picks = SkyCountdown.pick(listOf(spirit("放松日浴者", "2026-10-08", "2026-10-12")), today)
+        assertEquals(1, picks.ongoingList.size)
+        assertEquals("放松日浴者", picks.ongoingList[0].spiritName)
+    }
+
+    @Test
+    fun `下一次是集体复刻时也带出全部名单`() {
+        val picks = SkyCountdown.pick(
+            listOf(
+                spirit("甲", "2026-10-20", "2026-10-26", id = 1),
+                spirit("乙", "2026-10-20", "2026-10-26", id = 2),
+            ),
+            today,
+        )
+        assertEquals(2, picks.nextList.size)
+        assertEquals(setOf("甲", "乙"), picks.nextList.map { it.spiritName }.toSet())
+    }
+
+    @Test
+    fun `没有复刻时列表是空的_界面不会崩`() {
+        val picks = SkyCountdown.pick(emptyList(), today)
+        assertTrue(picks.ongoingList.isEmpty())
+        assertTrue(picks.nextList.isEmpty())
+    }
+
+    // ── 1.3.0：季节"时间不对"的三条规则 ────────────────────────────────────────
+
+    @Test
+    fun `季节_结束时间官方未公布时不显示天数`() {
+        val season = SkySeasonEntity(id = 1, name = "珍珠季", startDate = "2026-10-01", endDate = "", fetchedAt = 0L)
+        val status = SkyCountdown.seasonStatus(season, today)
+        assertFalse(status.notStarted)
+        assertNull("未公布结束时间就不该算天数", status.daysLeft)
+        assertFalse(status.hasKnownEnd)
+    }
+
+    @Test
+    fun `季节_还没开始时说还有几天开始`() {
+        val seasons = listOf(
+            SkySeasonEntity(id = 1, name = "致梵高季", startDate = "2026-07-17", endDate = "2026-10-02", fetchedAt = 0L),
+            SkySeasonEntity(id = 2, name = "珍珠季", startDate = "2026-10-22", endDate = "", fetchedAt = 0L),
+        )
+        val status = SkyCountdown.seasonStatus(SkyCountdown.currentSeason(seasons, today), today)
+        assertEquals("珍珠季", status.season?.name)
+        assertTrue(status.notStarted)
+        assertEquals(13L, status.daysUntilStart)
+        assertNull(status.daysLeft)
+    }
+
+    @Test
+    fun `季节_回归测试_两个季节中间不会显示成还剩三万多天`() {
+        // 真实数据：致梵高季 10-02 结束、珍珠季 10-22 开始（结束日是 WIKI 占位值）。
+        // 今天 10-09 正好夹在中间 —— 以前会把珍珠季当成当季，显示"还剩 3 万多天"。
+        val seasons = listOf(
+            SkySeasonEntity(id = 1, name = "致梵高季", startDate = "2026-07-17", endDate = "2026-10-02", fetchedAt = 0L),
+            SkySeasonEntity(id = 2, name = "珍珠季", startDate = "2026-10-22", endDate = "", fetchedAt = 0L),
+        )
+        val status = SkyCountdown.seasonStatus(SkyCountdown.currentSeason(seasons, today), today)
+        assertNull("未公布结束时间就不该算天数", status.daysLeft)
+        assertTrue("应该只是'还有几天开始'", (status.daysUntilStart ?: 0L) < 30L)
+    }
+
+    @Test
+    fun `季节_进行中且结束时间已公布时照旧显示还剩几天`() {
+        val season = SkySeasonEntity(id = 1, name = "当季", startDate = "2026-09-01", endDate = "2026-10-20", fetchedAt = 0L)
+        val status = SkyCountdown.seasonStatus(season, today)
+        assertFalse(status.notStarted)
+        assertEquals(11L, status.daysLeft)
+        assertNull(status.daysUntilStart)
+        assertTrue(status.hasKnownEnd)
+    }
+
+
+    @Test
+    fun `季节_数据库里还存着旧的占位结束时间_也不会显示成三万多天`() {
+        // 装过旧版的人，数据库里存的就是 WIKI 那个占位值 2099-12-31
+        // （升级后一小时内还没重新抓，所以界面必须自己也能挡住）
+        val season = SkySeasonEntity(
+            id = 1, name = "珍珠季", startDate = "2026-10-22",
+            endDate = "2099-12-31", fetchedAt = 0L,
+        )
+        val status = SkyCountdown.seasonStatus(season, today)
+        assertTrue(status.notStarted)
+        assertNull(status.daysLeft)
+        assertEquals("官方未公布", status.endLabel)
+    }
+
+    @Test
+    fun `季节_已经开始但结束日是占位值_算进行中且未公布`() {
+        val season = SkySeasonEntity(
+            id = 1, name = "某季", startDate = "2026-10-01",
+            endDate = "2099-12-31", fetchedAt = 0L,
+        )
+        val status = SkyCountdown.seasonStatus(season, today)
+        assertFalse(status.notStarted)
+        assertNull(status.daysLeft)
+        assertEquals("官方未公布", status.endLabel)
     }
 }
