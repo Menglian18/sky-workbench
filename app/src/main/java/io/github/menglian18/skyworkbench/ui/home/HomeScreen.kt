@@ -219,8 +219,14 @@ fun HomeScreen(
             }
 
             // ── 当季剩余 ──────────────────────────────────────────────
-            SummaryCard("当季剩余", onClick = { onOpenTab(TabDestination.PLAY) }) {
-                val current = season
+            // 季节的结束时间可能是"官方还没公布"（存成空串），所以统一走 seasonStatus。
+            // 教训：这里以前直接拿结束时间算天数，空串解析会抛异常 → 首页一打开就闪退。
+            val seasonState = SkyCountdown.seasonStatus(season, dateKey)
+            SummaryCard(
+                title = if (seasonState.notStarted) "下个季节" else "当季剩余",
+                onClick = { onOpenTab(TabDestination.PLAY) },
+            ) {
+                val current = seasonState.season
                 if (current == null) {
                     Text(
                         text = "还没获取到季节信息 →",
@@ -229,7 +235,16 @@ fun HomeScreen(
                     )
                 } else {
                     Text(
-                        text = "${current.name} · 还剩 ${SkyCountdown.daysLeft(current.endDate, dateKey)} 天",
+                        text = buildString {
+                            append(current.name)
+                            when {
+                                seasonState.notStarted ->
+                                    append(" · 还有 ").append(seasonState.daysUntilStart).append(" 天开始")
+                                seasonState.daysLeft != null ->
+                                    append(" · 还剩 ").append(seasonState.daysLeft).append(" 天")
+                                else -> append(" · 结束时间官方未公布")
+                            }
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )

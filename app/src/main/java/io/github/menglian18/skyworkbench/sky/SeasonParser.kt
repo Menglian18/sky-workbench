@@ -1,6 +1,7 @@
 package io.github.menglian18.skyworkbench.sky
 
 import io.github.menglian18.skyworkbench.data.db.SkySeasonEntity
+import io.github.menglian18.skyworkbench.util.DateKeys
 import org.json.JSONObject
 
 /**
@@ -30,7 +31,8 @@ object SeasonParser {
             val printouts = results.optJSONObject(name)?.optJSONObject("printouts") ?: continue
             val start = firstValue(printouts, "开启时间") ?: continue
             val startDate = start.take(10)
-            if (startDate.length != 10) continue
+            // 必须真的是一个能读懂的日子（`2026-13-45` 这种正则能过，但拿去解析会炸）
+            if (DateKeys.parseOrNull(startDate) == null) continue
             output += SkySeasonEntity(
                 name = name,
                 startDate = startDate,
@@ -51,7 +53,7 @@ object SeasonParser {
      */
     fun normalizeEnd(rawEnd: String?, startDate: String): String {
         val end = rawEnd?.take(10) ?: return ""
-        if (end.length != 10) return ""
+        if (DateKeys.parseOrNull(end) == null) return ""
         if (isPlaceholder(end)) return ""
         if (end < startDate) return ""
         return end

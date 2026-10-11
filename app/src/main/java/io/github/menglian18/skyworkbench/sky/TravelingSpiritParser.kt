@@ -1,6 +1,7 @@
 package io.github.menglian18.skyworkbench.sky
 
 import io.github.menglian18.skyworkbench.data.db.SkyTravelingSpiritEntity
+import io.github.menglian18.skyworkbench.util.DateKeys
 
 /**
  * 解析 B站光遇WIKI 复刻页里的 `{{复刻项|...}}`。
@@ -54,9 +55,15 @@ object TravelingSpiritParser {
         return map
     }
 
-    /** 只接受 `2026-10-01` 这种格式；`2026.10.01` 之类一律当作无效（避免存进脏数据）。 */
+    /**
+     * 只接受 `2026-10-01` 这种**真的能读懂**的日期。
+     *
+     * `2026.10.01` 格式不对的直接拒掉；`2026-13-45` 这种正则能过、
+     * 但拿去 `LocalDate.parse` 会抛异常的，也必须拒掉 —— 否则界面上算天数时会闪退。
+     */
     fun normalizeDate(raw: String?): String? {
         val text = raw?.trim().orEmpty()
-        return if (dateRegex.matches(text)) text else null
+        if (!dateRegex.matches(text)) return null
+        return text.takeIf { DateKeys.parseOrNull(it) != null }
     }
 }

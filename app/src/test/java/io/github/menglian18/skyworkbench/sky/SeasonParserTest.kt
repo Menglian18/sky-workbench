@@ -100,4 +100,18 @@ class SeasonParserTest {
         assertEquals("", SeasonParser.effectiveEnd("看不懂"))
         assertEquals("2026-10-14", SeasonParser.effectiveEnd("2026-10-14"))
     }
+
+
+    @Test
+    fun `读不懂的日期不会进数据库`() {
+        val json = """{"query":{"results":{
+          "坏开始":{"printouts":{"开启时间":["2026-13-45 08:00"],"结束时间":["2026-11-01 23:59"]}},
+          "坏结束":{"printouts":{"开启时间":["2026-05-01 08:00"],"结束时间":["2026-13-45 23:59"]}}
+        }}}"""
+        val list = SeasonParser.parse(json, 1L)
+        // 开始时间读不懂 → 整条丢掉；结束时间读不懂 → 保留，但记成"未公布"
+        assertEquals(1, list.size)
+        assertEquals("坏结束", list[0].name)
+        assertEquals("", list[0].endDate)
+    }
 }

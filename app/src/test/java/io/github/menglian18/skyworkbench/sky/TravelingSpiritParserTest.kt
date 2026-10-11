@@ -96,4 +96,13 @@ class TravelingSpiritParserTest {
         val list = TravelingSpiritParser.parse(realRow, 1L)
         assertEquals(TravelingSpiritParser.SOURCE, list[0].source)
     }
+
+
+    @Test
+    fun `正则能过但日子不存在的也要拒掉`() {
+        // 2026-13-45 / 2026-02-30 都能通过 \d{4}-\d{2}-\d{2}，但拿去解析会抛异常
+        assertNull(TravelingSpiritParser.normalizeDate("2026-13-45"))
+        assertNull(TravelingSpiritParser.normalizeDate("2026-02-30"))
+        assertEquals("2026-10-01", TravelingSpiritParser.normalizeDate("2026-10-01"))
+    }
 }

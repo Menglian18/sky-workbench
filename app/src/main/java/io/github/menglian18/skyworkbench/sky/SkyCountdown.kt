@@ -62,9 +62,22 @@ data class SeasonStatus(
  */
 object SkyCountdown {
 
-    /** 到 [endDate] 还剩几天（今天到期算 0，已经过去算负数）。 */
-    fun daysLeft(endDate: String, todayKey: String): Long =
-        ChronoUnit.DAYS.between(DateKeys.parse(todayKey), DateKeys.parse(endDate))
+    /**
+     * 到 [endDate] 还剩几天（今天到期算 0，已经过去算负数）。
+     *
+     * **绝不抛异常**：日期读不懂（空串、脏数据）时返回 0。
+     * 需要区分"读不懂"的调用方请用 [daysLeftOrNull]。
+     * （教训：这里原来直接 `LocalDate.parse`，遇到"结束时间官方未公布"的空串就抛异常，
+     *   首页一打开就闪退 —— 宁可显示 0，也不能让 App 崩。）
+     */
+    fun daysLeft(endDate: String, todayKey: String): Long = daysLeftOrNull(endDate, todayKey) ?: 0L
+
+    /** 同上，但日期读不懂时返回 null（界面据此不显示天数）。 */
+    fun daysLeftOrNull(endDate: String, todayKey: String): Long? {
+        val end = DateKeys.parseOrNull(endDate) ?: return null
+        val today = DateKeys.parseOrNull(todayKey) ?: return null
+        return ChronoUnit.DAYS.between(today, end)
+    }
 
     /**
      * 从复刻列表里挑出：

@@ -289,4 +289,36 @@ class SkyCountdownTest {
         assertNull(status.daysLeft)
         assertEquals("官方未公布", status.endLabel)
     }
+
+
+    // ── 1.3.1：算天数绝不抛异常（闪退就是这么来的）────────────────────────────
+
+    @Test
+    fun `结束时间是空串时_算天数不抛异常而是 0`() {
+        assertEquals(0L, SkyCountdown.daysLeft("", today))
+        assertNull(SkyCountdown.daysLeftOrNull("", today))
+    }
+
+    @Test
+    fun `日期读不懂时_算天数也不抛异常`() {
+        assertEquals(0L, SkyCountdown.daysLeft("看不懂", today))
+        assertEquals(0L, SkyCountdown.daysLeft("2026-13-45", today))
+        assertNull(SkyCountdown.daysLeftOrNull("2026-13-45", today))
+        assertNull(SkyCountdown.daysLeftOrNull("2026-10-20", "不是今天"))
+    }
+
+    @Test
+    fun `回归_首页那句当季剩余在结束时间未公布时不再崩`() {
+        // 闪退的最小场景：库里是这个季节（结束时间未公布），首页要显示还剩几天
+        val season = SkySeasonEntity(
+            id = 1, name = "珍珠季", startDate = "2026-10-22",
+            endDate = "", fetchedAt = 0L,
+        )
+        val status = SkyCountdown.seasonStatus(season, today)
+        assertEquals(13L, status.daysUntilStart)
+        assertNull(status.daysLeft)
+        assertEquals("官方未公布", status.endLabel)
+        // 这一句就是首页原来崩掉的那行
+        assertEquals(0L, SkyCountdown.daysLeft(season.endDate, today))
+    }
 }
