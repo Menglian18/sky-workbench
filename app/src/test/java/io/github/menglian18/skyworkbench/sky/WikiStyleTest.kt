@@ -63,13 +63,50 @@ class WikiStyleTest {
 
     @Test
     fun `藏掉网页的零件但不动正文`() {
-        assertTrue(css.contains("#breadcrumb"))
-        assertTrue(css.contains(".mw-editsection"))
-        assertTrue(css.contains("#catlinks"))
+        assertTrue(WikiStyle.HIDDEN.contains("#breadcrumb"))
+        assertTrue(WikiStyle.HIDDEN.contains(".mw-editsection"))
+        assertTrue(WikiStyle.HIDDEN.contains("#catlinks"))
         assertTrue(css.contains("display:none!important"))
-        // 目录要留着（长页面靠它跳转），只是缩小
-        assertFalse(WikiStyle.HIDDEN.contains("#toc"))
-        assertTrue(css.contains("#toc,.toc{background:"))
+    }
+
+    @Test
+    fun `1_4_1 要藏的那四样一个都不能漏`() {
+        // 下面这些 class/id 是**侦察真实页面结构**得到的（见 WikiNoise 的注释）
+        assertTrue("面包屑和「短刷编历」都在 .crumb 里", WikiStyle.HIDDEN.contains(".crumb"))
+        assertTrue("MediaWiki 的目录", WikiStyle.HIDDEN.contains("#toc"))
+        assertTrue("节日信息模板里给电脑看的那份拷贝", WikiStyle.HIDDEN.contains(".hidden-xs"))
+        assertTrue("模板留下的两个空壳", WikiStyle.HIDDEN.contains("#noscrolltoc"))
+        assertTrue(WikiStyle.HIDDEN.contains("#nohovertoc"))
+        assertTrue(css.contains("display:none!important"))
+    }
+
+    @Test
+    fun `清理脚本跟 Kotlin 里的规则是同一份`() {
+        val script = WikiStyle.cleanupScript()
+        val patterns =
+            WikiNoise.blockPatterns() + WikiNoise.noisePatterns() + WikiNoise.pastPatterns()
+        assertTrue(patterns.isNotEmpty())
+        for (pattern in patterns) {
+            // 脚本里的正则必须和电脑上测过的那份逐字一致（差一个字就白测了）
+            val quoted = org.json.JSONObject.quote(pattern)
+            assertTrue("脚本里少了这条规则：$pattern", script.contains(quoted))
+        }
+        for (marker in WikiNoise.stationLinks()) {
+            assertTrue("脚本里少了站务链接标记：$marker", script.contains(marker))
+        }
+        for (alt in WikiNoise.decorImageAlts()) {
+            assertTrue("脚本里少了装饰图标记：$alt", script.contains(alt))
+        }
+    }
+
+    @Test
+    fun `收拾空壳时不动表格单元格`() {
+        val script = WikiStyle.cleanupScript()
+        // 删空的 td/th 会让整张表错位，所以只收拾这几种容器
+        assertTrue(script.contains("querySelectorAll('div,p,span,li,ul,ol,section')"))
+        assertFalse(script.contains("'div,p,span,li,td,th'"))
+        assertTrue(script.contains("createTreeWalker"))
+        assertTrue(script.contains("closest('table,ul,ol,div')"))
     }
 
     @Test
