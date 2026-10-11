@@ -2,13 +2,23 @@ package io.github.menglian18.skyworkbench.sky
 
 import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 
-/** 活动在界面上的三堆：进行中 / 即将开始 / 已结束。 */
+/** 活动分成的几堆：进行中 / 即将开始 / 已结束。 */
 data class SkyEventBuckets(
     val ongoing: List<SkyEventEntity> = emptyList(),
     val upcoming: List<SkyEventEntity> = emptyList(),
     val past: List<SkyEventEntity> = emptyList(),
 ) {
     val isEmpty: Boolean get() = ongoing.isEmpty() && upcoming.isEmpty() && past.isEmpty()
+
+    /**
+     * 「活动」页实际显示的那些（1.4.0 用户要求：**已经结束的就不要了**）。
+     *
+     * [past] 仍然照旧算出来 —— 它是「清空早就没用的数据」那套规则要用的，
+     * 只是不再往界面上摆。
+     */
+    val shown: List<SkyEventEntity> get() = ongoing + upcoming
+
+    val hasShown: Boolean get() = shown.isNotEmpty()
 }
 
 /**

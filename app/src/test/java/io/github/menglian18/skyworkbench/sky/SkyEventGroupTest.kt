@@ -2,6 +2,7 @@ package io.github.menglian18.skyworkbench.sky
 
 import io.github.menglian18.skyworkbench.data.db.SkyEventEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -89,5 +90,35 @@ class SkyEventGroupTest {
         val buckets = SkyEventGroup.split(listOf(event("某活动", "2026-09-01", "2099-12-31", 1)), today)
         assertEquals(1, buckets.ongoing.size)
         assertEquals(0, buckets.past.size)
+    }
+
+    // ── 1.4.0：用户要求「活动里已经结束的就不要了」 ────────────────────────────
+
+    @Test
+    fun `已结束的不出现在要显示的那两堆里`() {
+        val buckets = SkyEventGroup.split(
+            listOf(
+                event("进行中", "2026-10-02", "2026-10-18", 1),
+                event("还没开始", "2026-10-20", "2026-10-30", 2),
+                event("已经结束", "2026-09-01", "2026-09-20", 3),
+            ),
+            today,
+        )
+        assertEquals(listOf("进行中", "还没开始"), buckets.shown.map { it.name })
+        assertTrue(buckets.hasShown)
+    }
+
+    @Test
+    fun `只剩已结束的活动时界面算空的`() {
+        val buckets = SkyEventGroup.split(listOf(event("已经结束", "2026-09-01", "2026-09-20", 1)), today)
+        assertFalse(buckets.hasShown)
+        assertTrue(buckets.shown.isEmpty())
+        // 数据本身还在 —— 清理规则要用它，只是不给用户看
+        assertEquals(1, buckets.past.size)
+    }
+
+    @Test
+    fun `什么都没抓到时也算空的`() {
+        assertFalse(SkyEventGroup.split(emptyList(), today).hasShown)
     }
 }

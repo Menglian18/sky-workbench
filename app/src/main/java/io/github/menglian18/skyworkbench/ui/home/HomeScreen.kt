@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +43,7 @@ import io.github.menglian18.skyworkbench.data.db.TodoEntity
 import io.github.menglian18.skyworkbench.sky.SkyCountdown
 import io.github.menglian18.skyworkbench.today.Quadrant
 import io.github.menglian18.skyworkbench.ui.nav.TabDestination
+import io.github.menglian18.skyworkbench.ui.sky.WikiDetailDialog
 import io.github.menglian18.skyworkbench.util.DateKeys
 import kotlinx.coroutines.launch
 
@@ -67,6 +70,8 @@ fun HomeScreen(
 
     var quickText by remember { mutableStateOf("") }
     var quickPinned by remember { mutableStateOf(false) }
+    // 1.4.0：点"看详细介绍"就查这个季节的 WIKI 页面（存页面名，空表示没开）
+    var seasonDetail by remember { mutableStateOf<String?>(null) }
 
     // 每次回到首页都按"现在"重算今天（并结算顺延）
     LaunchedEffect(Unit) { viewModel.refreshToday() }
@@ -248,7 +253,23 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
+                    // 卡片本身是"跳到娱乐页"的快捷方式，所以介绍另外给一个小按钮，
+                    // 免得把原来那个跳转抢掉了
+                    TextButton(
+                        onClick = { seasonDetail = current.name },
+                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                    ) { Text("看详细介绍 →") }
                 }
+            }
+
+            seasonDetail?.let { name ->
+                WikiDetailDialog(
+                    title = name,
+                    subtitle = seasonState.season
+                        ?.let { it.startDate + " ～ " + seasonState.endLabel }
+                        .orEmpty(),
+                    onDismiss = { seasonDetail = null },
+                )
             }
 
             // ── 最近备忘 ──────────────────────────────────────────────

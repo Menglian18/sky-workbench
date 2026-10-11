@@ -180,6 +180,8 @@ private fun TravelingSection(
     codex: CodexViewModel = viewModel(),
 ) {
     var treeSpiritName by remember { mutableStateOf<String?>(null) }
+    // 1.4.0：点季节卡片看详细介绍（存的是要查的 WIKI 页面名）
+    var seasonDetail by remember { mutableStateOf<String?>(null) }
     val treeCount by codex.treeCount.collectAsState()
     val countdown by viewModel.countdown.collectAsState()
     val season by viewModel.currentSeason.collectAsState()
@@ -342,7 +344,21 @@ private fun TravelingSection(
             }
         }
 
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        // 1.4.0：季节卡片改成可点，"点一下看详细介绍"（内容是 WIKI 的季节页面正文）
+        val seasonState = SkyCountdown.seasonStatus(season, todayKey)
+        val seasonName = seasonState.season?.name
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (seasonName != null) {
+                        Modifier.clickable { seasonDetail = seasonName }
+                    } else {
+                        Modifier
+                    },
+                ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -352,7 +368,6 @@ private fun TravelingSection(
                 // 1.3.0：季节要分清"进行中 / 还没开始 / 结束时间官方还没公布"。
                 // 以前只看"结束日 ≥ 今天"，于是把还没开始的下个季节当成当季，
                 // 再配上 WIKI 的占位结束日（2099-12-31），显示成"还剩 3 万多天"。
-                val seasonState = SkyCountdown.seasonStatus(season, todayKey)
                 Text(
                     text = if (seasonState.notStarted) "下个季节" else "当季",
                     style = MaterialTheme.typography.labelLarge,
@@ -384,6 +399,11 @@ private fun TravelingSection(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        text = "点一下看详细介绍 →",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
                 }
             }
         }
@@ -398,6 +418,17 @@ private fun TravelingSection(
                 candidates = codex.spiritsWithTrees(),
                 onPick = { picked -> treeSpiritName = picked },
                 onDismiss = { treeSpiritName = null },
+            )
+        }
+
+        // 1.4.0：季节的详细介绍（WIKI 正文，页面名就是季节名）
+        seasonDetail?.let { name ->
+            WikiDetailDialog(
+                title = name,
+                subtitle = seasonState.season
+                    ?.let { it.startDate + " ～ " + seasonState.endLabel }
+                    .orEmpty(),
+                onDismiss = { seasonDetail = null },
             )
         }
 

@@ -1,6 +1,8 @@
 package io.github.menglian18.skyworkbench.ui.sky
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,17 +36,19 @@ import io.github.menglian18.skyworkbench.sky.SkyEventGroup
 import io.github.menglian18.skyworkbench.sky.SkyViewModel
 import io.github.menglian18.skyworkbench.ui.common.EmptyState
 
-/** 已结束的活动默认折叠成最近这几条，免得列表长得看不到头 */
-private const val PAST_PREVIEW = 8
-
 /**
- * 活动查看（1.3.0 新增）。
+ * 活动查看（1.3.0 新增，1.4.0 改过）。
  *
- * 数据来自 WIKI 的「分类:节日活动」—— 60 多个活动页，每个都带开启/结束时间，
- * 所以能自动抓。分成三堆：**进行中 / 即将开始 / 已结束**。
+ * 数据来自 WIKI 的「分类:节日活动」—— 60 多个活动页，每个都带开启/结束时间，所以能自动抓。
+ * 只分两堆：**进行中 / 即将开始**。
  *
- * 结束时间官方还没公布的活动（WIKI 上写占位值 2099 年那种）会显示成
- * 「结束时间未公布」，而不是编一个天数出来。
+ * 1.4.0 的两条用户要求：
+ *  - 「活动里已经结束的就不要了」：以前还留一块「已结束」，现在整个不显示了；
+ *  - 「进行中的能点击查看详细介绍」：点卡片弹出这个活动的 WIKI 页面正文（见 [WikiDetailDialog]）。
+ *    每一条都是从那个分类里抓来的，所以一定有对应的页面，点了不会扑空。
+ *
+ * 结束时间官方还没公布的活动（WIKI 上写占位值 2099 年那种）显示成「结束时间未公布」，
+ * 而不是编一个天数出来。
  */
 @Composable
 fun EventListScreen(
@@ -56,72 +59,74 @@ fun EventListScreen(
     val todayKey by viewModel.todayKey.collectAsState()
     val status by viewModel.fetchStatus.collectAsState()
     val buckets = SkyEventGroup.split(events, todayKey)
-    var showAllPast by remember { mutableStateOf(false) }
+    var detail by remember { mutableStateOf<SkyEventEntity?>(null) }
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = buildString {
-                        append("更新于 ").append(formatTime(status.lastFetchedAt))
-                        if (status.loading) append(" · 正在更新…")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { viewModel.refresh(force = true) }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "手动更新")
-                }
-            }
-        }
-
-        status.message?.takeIf { status.failed }?.let { message ->
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             item {
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-
-        if (buckets.isEmpty) {
-            item {
-                EmptyState(
-                    message = "还没有活动数据。点右上角刷新去拿一次；\n" +
-                        "抓不到也不影响你自己记的东西。",
-                    actionLabel = "现在更新",
-                    onAction = { viewModel.refresh(force = true) },
-                )
-            }
-        }
-
-        if (buckets.ongoing.isNotEmpty()) {
-            item { EventHeader("进行中") }
-            items(buckets.ongoing, key = { it.id }) { EventCard(it, todayKey, highlighted = true) }
-        }
-
-        if (buckets.upcoming.isNotEmpty()) {
-            item { EventHeader("即将开始") }
-            items(buckets.upcoming, key = { it.id }) { EventCard(it, todayKey, highlighted = false) }
-        }
-
-        if (buckets.past.isNotEmpty()) {
-            item { EventHeader("已结束") }
-            val shown = if (showAllPast) buckets.past else buckets.past.take(PAST_PREVIEW)
-            items(shown, key = { it.id }) { EventCard(it, todayKey, highlighted = false) }
-            if (!showAllPast && buckets.past.size > PAST_PREVIEW) {
-                item {
-                    TextButton(onClick = { showAllPast = true }) {
-                        Text("显示全部 ${buckets.past.size} 个已结束的活动")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = buildString {
+                            append("更新于 ").append(formatTime(status.lastFetchedAt))
+                            if (status.loading) append(" · 正在更新…")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { viewModel.refresh(force = true) }) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "手动更新")
                     }
                 }
             }
+
+            status.message?.takeIf { status.failed }?.let { message ->
+                item {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            if (!buckets.hasShown) {
+                item {
+                    EmptyState(
+                        message = "现在没有进行中或即将开始的活动。点右上角刷新去拿一次；\n" +
+                            "抓不到也不影响你自己记的东西。",
+                        actionLabel = "现在更新",
+                        onAction = { viewModel.refresh(force = true) },
+                    )
+                }
+            }
+
+            if (buckets.ongoing.isNotEmpty()) {
+                item { EventHeader("进行中") }
+                items(buckets.ongoing, key = { it.id }) {
+                    EventCard(it, todayKey, highlighted = true, onClick = { detail = it })
+                }
+            }
+
+            if (buckets.upcoming.isNotEmpty()) {
+                item { EventHeader("即将开始") }
+                items(buckets.upcoming, key = { it.id }) {
+                    EventCard(it, todayKey, highlighted = false, onClick = { detail = it })
+                }
+            }
+        }
+
+        detail?.let { event ->
+            WikiDetailDialog(
+                title = event.name,
+                subtitle = event.startDate + " ～ " +
+                    SeasonParser.effectiveEnd(event.endDate).ifBlank { "结束时间未公布" },
+                onDismiss = { detail = null },
+            )
         }
     }
 }
@@ -137,8 +142,16 @@ private fun EventHeader(title: String) {
 }
 
 @Composable
-private fun EventCard(event: SkyEventEntity, todayKey: String, highlighted: Boolean) {
+private fun EventCard(
+    event: SkyEventEntity,
+    todayKey: String,
+    highlighted: Boolean,
+    onClick: () -> Unit,
+) {
     Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = if (highlighted) MaterialTheme.colorScheme.surface
             else MaterialTheme.colorScheme.surface,
@@ -166,6 +179,11 @@ private fun EventCard(event: SkyEventEntity, todayKey: String, highlighted: Bool
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (highlighted) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "点一下看详细介绍 →",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
             )
         }
     }
